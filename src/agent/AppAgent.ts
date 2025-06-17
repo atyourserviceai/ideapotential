@@ -154,9 +154,9 @@ export class AppAgent extends AIChatAgent<Env> {
       !["onboarding", "integration", "plan", "act"].includes(state.mode)
     ) {
       console.log(
-        "[AppAgent] No valid mode found in state, defaulting to plan mode"
+        "[AppAgent] No valid mode found in state, defaulting to onboarding mode"
       );
-      state.mode = "plan";
+      state.mode = "onboarding";
     }
 
     // Ensure settings exists
@@ -198,11 +198,13 @@ export class AppAgent extends AIChatAgent<Env> {
   }
 
   /**
-   * Get tools available for the current mode
+   * Get the appropriate tools based on the current agent mode
    */
   async getToolsForMode() {
     const state = this.state as AppAgentState;
     const mode = state.mode;
+
+    console.log(`[AppAgent] Getting tools for mode: ${mode}`);
 
     // Base tools available in all modes
     const baseTools = {
@@ -271,11 +273,17 @@ export class AppAgent extends AIChatAgent<Env> {
 
   /**
    * Handles incoming chat messages and manages the response stream
+   * @param onFinish - Callback function executed when streaming completes
+   * @param options - Optional parameters including abortSignal
    */
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
     options?: { abortSignal?: AbortSignal }
   ) {
+    // const mcpConnection = await this.mcp.connect(
+    //   "https://path-to-mcp-server/sse"
+    // );
+
     const dataStreamResponse = createDataStreamResponse({
       execute: async (dataStream) => {
         // Get the current mode's tools
@@ -287,9 +295,16 @@ export class AppAgent extends AIChatAgent<Env> {
           `[AppAgent] Processing chat message in ${currentMode} mode`
         );
 
+        // We don't have MCP implementation yet, so just use mode tools
+        // In the future, we can add MCP tools:
+        // const allTools = {
+        //   ...modeTools,
+        //   ...this.mcp.unstable_getAITools(),
+        // };
         const allTools = modeTools;
 
         // Process any pending tool calls from previous messages
+        // This handles human-in-the-loop confirmations for tools
         const processedMessages = await processToolCalls({
           messages: this.messages,
           dataStream,
@@ -402,6 +417,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
   /**
    * Handle direct HTTP requests to the agent
+   * This is used for actions like setting the mode
    */
   async onRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
@@ -416,7 +432,12 @@ export class AppAgent extends AIChatAgent<Env> {
       console.log(`[AppAgent] Detected set-mode request: ${url.pathname}`);
 
       try {
+        // Only accept POST requests for mode changes
         if (request.method !== "POST") {
+          console.log(
+            "[AppAgent] Method not allowed for set-mode:",
+            request.method
+          );
           return Response.json(
             {
               success: false,
@@ -453,10 +474,12 @@ export class AppAgent extends AIChatAgent<Env> {
           );
         }
 
+        // Call the setMode method to change modes and inject transition messages
         console.log(
           `[AppAgent] Processing mode change request: mode=${newMode}, force=${force}, isAfterClearHistory=${isAfterClearHistory}`
         );
         const result = await this.setMode(newMode, force, isAfterClearHistory);
+
         return Response.json(result);
       } catch (error) {
         console.error("[AppAgent] Error processing mode change:", error);
@@ -481,10 +504,14 @@ export class AppAgent extends AIChatAgent<Env> {
       );
     }
 
-    // Export endpoint
+    // Export endpoint to export the entire Agent data
     if (url.pathname.endsWith("/export")) {
       console.log("[AppAgent] Data export requested");
+
+      // Use the utility function to handle export
       const exportResult = await exportAgentData(this);
+
+      // Return the full database export as pretty-formatted JSON
       return new Response(JSON.stringify(exportResult, null, 2), {
         headers: {
           "Content-Type": "application/json",
@@ -493,8 +520,9 @@ export class AppAgent extends AIChatAgent<Env> {
       });
     }
 
-    // Import endpoint
+    // Import endpoint to restore data from a previous export
     if (url.pathname.endsWith("/import")) {
+      // Only accept POST requests for import
       if (request.method !== "POST") {
         return Response.json(
           {
@@ -506,10 +534,15 @@ export class AppAgent extends AIChatAgent<Env> {
       }
 
       console.log("[AppAgent] Data import requested");
+
+      // Check content type to determine how to handle the request
       const contentType = request.headers.get("Content-Type") || "";
       let importRequest: ImportRequest;
 
       if (contentType.includes("multipart/form-data")) {
+        // Handle multipart/form-data with file upload
+        console.log("[AppAgent] Processing multipart form data upload");
+
         const formData = await request.formData();
         const file = formData.get("file");
 
@@ -517,12 +550,14 @@ export class AppAgent extends AIChatAgent<Env> {
           return Response.json(
             {
               success: false,
-              error: "No file provided in the request",
+              error:
+                "No file provided in the request. Please upload a backup file.",
             },
             { status: 400 }
           );
         }
 
+        // Read the file content
         const fileContent = await file.text();
         let importData: DatabaseExportResult;
 
@@ -532,26 +567,30 @@ export class AppAgent extends AIChatAgent<Env> {
           return Response.json(
             {
               success: false,
-              error: "Invalid JSON file format",
+              error:
+                "Invalid JSON file format. Could not parse the backup file.",
             },
             { status: 400 }
           );
         }
 
+        // Validate the imported data
         if (!importData.metadata || !importData.tables) {
           return Response.json(
             {
               success: false,
-              error: "Invalid backup file structure",
+              error:
+                "Invalid backup file structure. Missing metadata or tables.",
             },
             { status: 400 }
           );
         }
 
+        // Parse options from form data
         const preserveAgentId = formData.get("preserveAgentId") === "true";
-        const includeMessages = formData.get("includeMessages") !== "false";
+        const includeMessages = formData.get("includeMessages") !== "false"; // Default to true
         const includeScheduledTasks =
-          formData.get("includeScheduledTasks") !== "false";
+          formData.get("includeScheduledTasks") !== "false"; // Default to true
 
         importRequest = {
           options: {
@@ -562,15 +601,33 @@ export class AppAgent extends AIChatAgent<Env> {
           data: importData,
         };
       } else {
-        const body = (await request.json()) as {
-          data?: DatabaseExportResult;
-          options?: unknown;
-        };
+        console.log("[AppAgent] Processing JSON payload import");
+
+        interface ImportRequestBody {
+          options?: {
+            preserveAgentId?: boolean;
+            includeMessages?: boolean;
+            includeScheduledTasks?: boolean;
+          };
+          data: {
+            metadata: {
+              exportedAt: string;
+              agentId: string;
+              state: AppAgentState;
+            };
+            tables: Record<string, Record<string, unknown>>;
+          };
+        }
+
+        const body = (await request.json()) as ImportRequestBody;
+
+        // Validate that the request has the required fields
         if (!body.data || !body.data.metadata || !body.data.tables) {
           return Response.json(
             {
               success: false,
-              error: "Invalid import data format",
+              error:
+                "Invalid import data format. Expected {options, data} structure.",
             },
             { status: 400 }
           );
@@ -578,14 +635,16 @@ export class AppAgent extends AIChatAgent<Env> {
 
         importRequest = {
           options: body.options || {},
-          data: body.data,
+          data: body.data as unknown as DatabaseExportResult,
         };
       }
 
+      // Process import
       const importResult = await importAgentData(this, importRequest);
       return Response.json(importResult);
     }
 
+    // For all other cases, let the regular chat flow handle it
     return super.onRequest(request);
   }
 
@@ -593,6 +652,7 @@ export class AppAgent extends AIChatAgent<Env> {
    * Handle state updates and log the entire state for debugging
    */
   onStateUpdate(state: AppAgentState, source: "server" | Connection) {
+    // Get message count to help with debugging
     const messageCount = this.messages?.length || 0;
     const lastMessageId =
       messageCount > 0 ? this.messages?.[messageCount - 1]?.id : "none";
@@ -612,6 +672,8 @@ export class AppAgent extends AIChatAgent<Env> {
   async onConnect(connection: Connection) {
     console.log(`[AppAgent] New client connection: ${connection.id}`);
 
+    // Send a connection-ready event to signal that setup is complete
+    // The client can listen for this to know when to check for messages
     connection.send(
       JSON.stringify({
         type: "connection-ready",
@@ -622,14 +684,20 @@ export class AppAgent extends AIChatAgent<Env> {
 
   /**
    * Set the agent's operating mode
+   *
+   * @param mode The mode to set
+   * @param force If true, will override validation checks
+   * @param isAfterClearHistory If true, indicates this is after clearing history
    */
   async setMode(mode: AgentMode, force = false, isAfterClearHistory = false) {
     const currentState = this.state as AppAgentState;
     const previousMode = currentState.mode;
 
+    // Check if mode is actually changing
     if (previousMode !== mode || force) {
       console.log(`[AppAgent] Updating state: ${previousMode} → ${mode}`);
 
+      // Simple state update, no message manipulation
       await this.setState({
         ...currentState,
         mode,
@@ -669,6 +737,8 @@ export class AppAgent extends AIChatAgent<Env> {
 
   /**
    * Get table description for export/import
+   * Get a description of a table based on its name
+   * Used for the database export feature
    */
   getTableDescription(tableName: string): string {
     const descriptions: Record<string, string> = {

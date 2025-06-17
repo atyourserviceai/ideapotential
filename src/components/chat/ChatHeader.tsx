@@ -57,8 +57,8 @@ export function ChatHeader({
         >
           <option value="onboarding">Onboarding Mode</option>
           <option value="integration">Integration Mode</option>
-          <option value="plan">Planning Mode</option>
-          <option value="act">Action Mode</option>
+          <option value="plan">Plan Mode</option>
+          <option value="act">Act Mode</option>
         </select>
       </div>
 

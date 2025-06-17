@@ -20,8 +20,8 @@ export function ModeInfoCard({ agentMode }: ModeInfoCardProps) {
         <h3 className="font-semibold text-lg">
           {agentMode === "onboarding" && "Onboarding Mode"}
           {agentMode === "integration" && "Integration Mode"}
-          {agentMode === "plan" && "Planning Mode"}
-          {agentMode === "act" && "Action Mode"}
+          {agentMode === "plan" && "Plan Mode"}
+          {agentMode === "act" && "Act Mode"}
         </h3>
       </div>
 
