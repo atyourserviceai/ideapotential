@@ -1,8 +1,9 @@
 import type { Message } from "@ai-sdk/react";
 import { useAgentChat } from "agents/ai-react";
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ToolTypes } from "./agent/tools/types";
 import { useAgentState } from "./hooks/useAgentState";
+import { useAgentAuth } from "./hooks/useAgentAuth";
 import { useErrorHandling } from "./hooks/useErrorHandling";
 import { useMessageEditing } from "./hooks/useMessageEditing";
 
@@ -20,6 +21,10 @@ import { PlaybookContainer } from "@/components/chat/PlaybookContainer";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
+// Auth components
+import { AuthProvider } from "./components/auth/AuthProvider";
+import { AuthGuard } from "./components/auth/AuthGuard";
+import { ErrorBoundary } from "./components/error/ErrorBoundary";
 
 // Define agent data interface for typing
 interface AgentData {
@@ -43,8 +48,11 @@ function SuggestedActions({
   addToolResult: (args: { toolCallId: string; result: string }) => void;
   reload: () => void;
 }) {
+  // SAFETY: Ensure messages is an array before processing
+  const safeMessages = Array.isArray(messages) ? messages : [];
+
   // Find the latest message with suggestActions
-  const lastAssistantMessage = [...messages]
+  const lastAssistantMessage = [...safeMessages]
     .reverse()
     .find((msg) => msg.role === "assistant");
 
@@ -137,7 +145,41 @@ function SuggestedActions({
   );
 }
 
-export default function Chat() {
+function Chat() {
+  // Add global error handlers for better error handling
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+
+      // Check if it's a JSON parsing error
+      if (event.reason?.message?.includes("JSON")) {
+        console.error("JSON parsing error detected:", event.reason);
+        // Prevent the error from causing a blank screen
+        event.preventDefault();
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global error caught:", event.error);
+
+      // Check if it's a JSON parsing error
+      if (event.error?.message?.includes("JSON")) {
+        console.error("JSON parsing error detected:", event.error);
+      }
+    };
+
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    window.addEventListener("error", handleError);
+
+    return () => {
+      window.removeEventListener(
+        "unhandledrejection",
+        handleUnhandledRejection
+      );
+      window.removeEventListener("error", handleError);
+    };
+  }, []);
+
   // UI-related state
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     // Check localStorage first, default to dark if not found
@@ -169,9 +211,27 @@ export default function Chat() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Use the agent state hook instead of implementing the logic directly
-  const { agent, agentState, agentMode, changeAgentMode } =
-    useAgentState("onboarding");
+  // Get authenticated agent configuration
+  const agentConfig = useAgentAuth();
+
+  // Use the agent configuration (only available when authenticated)
+  if (!agentConfig) {
+    // This should never happen inside AuthGuard, but just in case
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-black to-blue-900 dark:from-blue-900 dark:via-black dark:to-blue-900">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">Loading...</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
+  // Use the agent state hook with authenticated config
+  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
+    agentConfig!, // Non-null assertion: agentConfig is guaranteed to exist here due to AuthGuard
+    "onboarding"
+  );
 
   // Use the error handling hook
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
@@ -185,7 +245,7 @@ export default function Chat() {
   }, [agentMode, agentState]);
 
   const {
-    messages: agentMessages,
+    messages: agentMessagesRaw,
     input: agentInput,
     handleInputChange: handleAgentInputChange,
     handleSubmit: handleAgentSubmit,
@@ -373,6 +433,9 @@ export default function Chat() {
     },
   });
 
+  // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
+  const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
+
   // Use the message editing hook to manage message editing and retry logic
   const {
     editingMessageId,
@@ -391,8 +454,6 @@ export default function Chat() {
     handleRetry,
     handleRetryLastUserMessage,
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
-
-  console.log(`[Chat] agentData: ${JSON.stringify(agentData)}`);
 
   // Handle custom event for setting chat input from PlaybookPanel
   useEffect(() => {
@@ -522,7 +583,8 @@ export default function Chat() {
 
   // Handle message rendering loop
   const renderMessages = () => {
-    if (agentMessages.length === 0) {
+    // SAFETY: Double-check that agentMessages is a valid array
+    if (!Array.isArray(agentMessages) || agentMessages.length === 0) {
       return <EmptyChat />;
     }
 
@@ -771,7 +833,12 @@ export default function Chat() {
   useEffect(() => {
     // If we have no messages but the agent is connected, show a loading indicator
     // This helps with the initial loading experience for new chatrooms
-    if (agent && agentMessages.length === 0 && !isLoading) {
+    if (
+      agent &&
+      Array.isArray(agentMessages) &&
+      agentMessages.length === 0 &&
+      !isLoading
+    ) {
       setTemporaryLoading(true);
 
       // Set a timeout to clear the loading state if no messages arrive
@@ -781,11 +848,16 @@ export default function Chat() {
 
       return () => clearTimeout(timeout);
     }
-  }, [agent, agentMessages.length, isLoading]);
+  }, [agent, agentMessages, isLoading]);
 
   // Single simplified auto-response for system messages (welcome or transition)
   useEffect(() => {
-    if (agentMessages.length > 0 && !isLoading && !temporaryLoading) {
+    if (
+      Array.isArray(agentMessages) &&
+      agentMessages.length > 0 &&
+      !isLoading &&
+      !temporaryLoading
+    ) {
       const lastMessage = agentMessages[agentMessages.length - 1];
 
       // Check if last message is a system message with isModeMessage data
@@ -808,9 +880,7 @@ export default function Chat() {
   }, [agentMessages, isLoading, temporaryLoading, reload]);
 
   return (
-    <div className="h-[100vh] w-full p-4 flex justify-center items-center bg-fixed overflow-hidden">
-      <HasOpenAIKey />
-
+    <div className="h-[100vh] w-full p-4 flex justify-center items-center overflow-hidden">
       {/* Main Container - Responsive layout with chat and playbook */}
       <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0">
         {/* Chat UI */}
@@ -857,74 +927,17 @@ export default function Chat() {
   );
 }
 
-const hasOpenAiKeyPromise = fetch("/check-open-ai-key").then((res) =>
-  res.json<{ success: boolean }>()
-);
-
-function HasOpenAIKey() {
-  const hasOpenAiKey = use(hasOpenAiKeyPromise);
-
-  if (!hasOpenAiKey || !hasOpenAiKey.success) {
-    return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-red-500/10 backdrop-blur-sm">
-        <div className="max-w-3xl mx-auto p-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-lg border border-red-200 dark:border-red-900 p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  className="w-5 h-5 text-red-600 dark:text-red-400"
-                  aria-labelledby="warningIcon"
-                >
-                  <title id="warningIcon">Warning Icon</title>
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
-                  OpenAI API Key Not Configured
-                </h3>
-                <p className="text-neutral-600 dark:text-neutral-300 mb-1">
-                  Requests to the API, including from the frontend UI, will not
-                  work until an OpenAI API key is configured.
-                </p>
-                <p className="text-neutral-600 dark:text-neutral-300">
-                  Please configure an OpenAI API key by setting a{" "}
-                  <a
-                    href="https://developers.cloudflare.com/workers/configuration/secrets/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-red-600 dark:text-red-400"
-                  >
-                    secret
-                  </a>{" "}
-                  named{" "}
-                  <code className="bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded text-red-600 dark:text-red-400 font-mono text-sm">
-                    OPENAI_API_KEY
-                  </code>
-                  . <br />
-                  You can also use a different model provider by following these{" "}
-                  <a
-                    href="https://github.com/cloudflare/agents-starter?tab=readme-ov-file#use-a-different-ai-model-provider"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-red-600 dark:text-red-400"
-                  >
-                    instructions.
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
+// Main App component with authentication
+export default function App() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900">
+      <ErrorBoundary>
+        <AuthProvider>
+          <AuthGuard>
+            <Chat />
+          </AuthGuard>
+        </AuthProvider>
+      </ErrorBoundary>
+    </div>
+  );
 }
