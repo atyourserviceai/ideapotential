@@ -17,9 +17,9 @@ interface TokenResponse {
 
 function getServerOAuthConfig(env: Env) {
   return {
-    client_id: "app-agent-template",
+    client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
+    client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET,
     token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
-    client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET, // OAuth client secret from environment
   };
 }
 
@@ -40,9 +40,11 @@ export async function handleTokenExchange(
 
     const config = getServerOAuthConfig(env);
 
-    console.log(
-      "[OAuth Token Exchange] Exchanging authorization code for token..."
-    );
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log(
+        "[OAuth Token Exchange] Exchanging authorization code for token..."
+      );
+    }
 
     // Make the secure token exchange with the client secret
     const response = await fetch(config.token_url, {
@@ -52,6 +54,7 @@ export async function handleTokenExchange(
         code,
         client_id: config.client_id,
         client_secret: config.client_secret,
+        redirect_uri: env.ATYOURSERVICE_OAUTH_REDIRECT_URI,
         grant_type: "authorization_code",
       }),
     });
@@ -66,10 +69,12 @@ export async function handleTokenExchange(
 
     const tokenData = (await response.json()) as TokenResponse;
 
-    console.log(
-      "[OAuth Token Exchange] Token exchange successful for user:",
-      tokenData.user_info?.id
-    );
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log(
+        "[OAuth Token Exchange] Token exchange successful for user:",
+        tokenData.user_info?.id
+      );
+    }
 
     // Return the token data to the client (without exposing the client secret)
     return new Response(JSON.stringify(tokenData), {

@@ -23,7 +23,7 @@ export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext
+    _ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
 
@@ -45,18 +45,18 @@ export default {
       if (agentName && agentName !== "app-agent") {
         return new Response(
           JSON.stringify({
+            availableAgents: ["app-agent"],
             error: "Agent not found",
             message: `Agent '${agentName}' does not exist. Available agent: 'app-agent'`,
-            availableAgents: ["app-agent"],
           }),
           {
-            status: 404,
             headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
               "Access-Control-Allow-Headers": "Content-Type, Authorization",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Origin": "*",
+              "Content-Type": "application/json",
             },
+            status: 404,
           }
         );
       }
@@ -66,7 +66,7 @@ export default {
     if (url.pathname === "/api/oauth/config") {
       return new Response(
         JSON.stringify({
-          client_id: "app-agent-template",
+          client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
           auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
           token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
         }),
@@ -83,8 +83,8 @@ export default {
         return new Response(
           JSON.stringify({ error: "Missing Authorization header" }),
           {
-            status: 401,
             headers: { "Content-Type": "application/json" },
+            status: 401,
           }
         );
       }
@@ -93,23 +93,23 @@ export default {
       const gatewayResponse = await fetch(
         `${env.GATEWAY_BASE_URL}/v1/user/info`,
         {
-          method: "GET",
           headers: {
             Authorization: authHeader,
           },
+          method: "GET",
         }
       );
 
       // Return the gateway response
       const responseData = await gatewayResponse.text();
       return new Response(responseData, {
-        status: gatewayResponse.status,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
         },
+        status: gatewayResponse.status,
       });
     }
 
@@ -126,11 +126,11 @@ export default {
             return new Response(
               JSON.stringify({ error: "Authentication required" }),
               {
-                status: 401,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 401,
               }
             );
           }
@@ -141,40 +141,42 @@ export default {
             return new Response(
               JSON.stringify({ error: "Invalid auth token" }),
               {
-                status: 403,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 403,
               }
             );
           }
 
           // Ensure user can only access their own agent instance
-          const pathMatch = url.pathname.match(
-            /\/agents\/([^\/]+)\/([^\/\?]+)/
-          );
+          const pathMatch = url.pathname.match(/\/agents\/([^/]+)\/([^/?]+)/);
           if (pathMatch) {
             const [, , roomName] = pathMatch;
             if (roomName !== userInfo.id) {
               return new Response(
                 JSON.stringify({ error: "Access denied: User ID mismatch" }),
                 {
-                  status: 403,
                   headers: {
-                    "Content-Type": "application/json",
                     "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json",
                   },
+                  status: 403,
                 }
               );
             }
           }
 
-          // Store user info in agent state (includes OAuth token as API key)
-          // User info will be loaded by the agent when it initializes using the OAuth token
           console.log(
-            `[Auth] Authentication successful for user: ${userInfo.id}`
+            `[Auth] WebSocket authentication successful for user: ${userInfo.id}`
           );
+          console.log(
+            `[Auth] Current token: ${token.substring(0, 20)}...${token.substring(-8)}`
+          );
+
+          // No need to store token - the agent can access it from the database
+          // The token is already stored in user_info table and will be accessed in onConnect
 
           return undefined; // Continue to agent
         },
@@ -192,11 +194,11 @@ export default {
             return new Response(
               JSON.stringify({ error: "Authentication required" }),
               {
-                status: 401,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 401,
               }
             );
           }
@@ -207,30 +209,28 @@ export default {
             return new Response(
               JSON.stringify({ error: "Invalid auth token" }),
               {
-                status: 403,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 403,
               }
             );
           }
 
           // Ensure user can only access their own agent instance
-          const pathMatch = url.pathname.match(
-            /\/agents\/([^\/]+)\/([^\/\?]+)/
-          );
+          const pathMatch = url.pathname.match(/\/agents\/([^/]+)\/([^/?]+)/);
           if (pathMatch) {
             const [, , roomName] = pathMatch;
             if (roomName !== userInfo.id) {
               return new Response(
                 JSON.stringify({ error: "Access denied: User ID mismatch" }),
                 {
-                  status: 403,
                   headers: {
-                    "Content-Type": "application/json",
                     "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json",
                   },
+                  status: 403,
                 }
               );
             }
@@ -251,19 +251,19 @@ export default {
       ) {
         return new Response(getMainHTML(), {
           headers: {
-            "Content-Type": "text/html",
             "Access-Control-Allow-Origin": "*",
+            "Content-Type": "text/html",
           },
         });
       }
 
       // For other requests, return 404
       return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404,
         headers: {
-          "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
         },
+        status: 404,
       });
     } catch (error) {
       console.error("Error routing request:", error);
@@ -275,11 +275,11 @@ export default {
           message: "An unexpected error occurred while processing the request",
         }),
         {
-          status: 500,
           headers: {
-            "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
           },
+          status: 500,
         }
       );
     }
@@ -299,11 +299,11 @@ async function verifyOAuthToken(
     console.log(`[Auth] Verifying token at: ${verifyEndpoint}`);
 
     const response = await fetch(verifyEndpoint, {
-      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      method: "POST",
     });
 
     console.log(`[Auth] Verification response status: ${response.status}`);
@@ -337,6 +337,13 @@ async function handleOAuthCallback(
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
+  console.log("[OAuth Callback] Called with:", {
+    code_preview: code ? `${code.substring(0, 20)}...` : null,
+    state,
+    error,
+    url: url.toString(),
+  });
+
   if (error) {
     console.error("OAuth error:", error);
     return new Response(
@@ -360,62 +367,21 @@ async function handleOAuthCallback(
   try {
     console.log("[OAuth Callback] Exchanging authorization code for token...");
 
-    // Exchange code for token using our API endpoint
-    const tokenResponse = await fetch(
-      `${url.origin}/api/oauth/token-exchange`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          grant_type: "authorization_code",
-        }),
-      }
-    );
+    // Exchange code for token directly
+    const tokenData = await exchangeCodeForToken(code, env);
 
-    if (!tokenResponse.ok) {
-      throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+    if (!tokenData) {
+      throw new Error("Token exchange failed: No token data returned");
     }
-
-    const tokenData = (await tokenResponse.json()) as TokenData;
 
     console.log(
       `[OAuth Callback] Token exchange successful for user: ${tokenData.user_info.id}`
     );
 
-    // Store user info persistently in the agent's database
-    try {
-      const agentBaseUrl = `${url.origin}/agents/app-agent/${tokenData.user_info.id}`;
-      console.log(
-        `[OAuth Callback] Storing user info in agent database for user: ${tokenData.user_info.id}`
-      );
-
-      const storeResponse = await fetch(`${agentBaseUrl}/store-user-info`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: tokenData.user_info.id,
-          api_key: tokenData.access_token, // OAuth token IS the gateway API key
-          email: tokenData.user_info.email,
-          credits: tokenData.user_info.credits,
-          payment_method: tokenData.user_info.payment_method,
-        }),
-      });
-
-      if (storeResponse.ok) {
-        console.log(
-          `[OAuth Callback] Successfully stored user info for user: ${tokenData.user_info.id}`
-        );
-      } else {
-        console.warn(
-          `[OAuth Callback] Failed to store user info: ${storeResponse.status}`
-        );
-        // Don't fail the OAuth flow if storage fails - user can still authenticate
-      }
-    } catch (error) {
-      console.warn("[OAuth Callback] Error storing user info:", error);
-      // Don't fail the OAuth flow if storage fails
-    }
+    // User info will be loaded by the agent when it initializes using the OAuth token
+    console.log(
+      `[OAuth Callback] Authentication successful for user: ${tokenData.user_info.id}`
+    );
 
     return new Response(getCallbackHTML(null, tokenData), {
       headers: { "Content-Type": "text/html" },
@@ -428,6 +394,99 @@ async function handleOAuthCallback(
         headers: { "Content-Type": "text/html" },
       }
     );
+  }
+}
+
+async function exchangeCodeForToken(
+  code: string,
+  env: Env
+): Promise<TokenData | null> {
+  const startTime = Date.now();
+  try {
+    console.log(
+      "[DEBUG] exchangeCodeForToken called with code:",
+      `${code.substring(0, 20)}...`,
+      "at",
+      new Date().toISOString()
+    );
+
+    // Exchange code for token with the OAuth provider
+    const requestBody = {
+      code,
+      client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
+      client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET,
+      redirect_uri: env.ATYOURSERVICE_OAUTH_REDIRECT_URI,
+      grant_type: "authorization_code",
+    };
+
+    // Only log debug info in development
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log("[DEBUG] Token exchange request:", {
+        url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+        client_id: requestBody.client_id,
+        code_preview: `${code.substring(0, 20)}...`,
+        redirect_uri: requestBody.redirect_uri,
+        grant_type: requestBody.grant_type,
+        has_client_secret: !!requestBody.client_secret,
+      });
+
+      console.log("[DEBUG] Sending token exchange request...");
+    }
+    const tokenResponse = await fetch(
+      `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log("[DEBUG] Token exchange response:", {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        headers: Object.fromEntries(tokenResponse.headers.entries()),
+        ok: tokenResponse.ok,
+      });
+    }
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      const elapsedTime = Date.now() - startTime;
+      console.error(
+        `[DEBUG] OAuth token exchange failed - Status: ${tokenResponse.status}, Response: ${errorText}, Elapsed: ${elapsedTime}ms`
+      );
+
+      // Try to parse the error response for more details
+      try {
+        const errorObj = JSON.parse(errorText);
+        console.error("[DEBUG] Parsed error object:", errorObj);
+      } catch (e) {
+        console.error("[DEBUG] Error response is not valid JSON");
+      }
+
+      return null;
+    }
+
+    const tokenData = (await tokenResponse.json()) as TokenData;
+    const elapsedTime = Date.now() - startTime;
+
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log("[DEBUG] Token exchange successful:", {
+        user_id: tokenData.user_info?.id,
+        has_access_token: !!tokenData.access_token,
+        elapsed_time: `${elapsedTime}ms`,
+      });
+    }
+
+    return tokenData;
+  } catch (error) {
+    const elapsedTime = Date.now() - startTime;
+    console.error(
+      `[DEBUG] Token exchange error after ${elapsedTime}ms:`,
+      error
+    );
+    return null;
   }
 }
 
@@ -478,7 +537,7 @@ function getCallbackHTML(
   <div class="container">
     <div class="spinner"></div>
     <h2>Authentication Successful!</h2>
-    <p class="success">Redirecting to your agent...</p>
+    <p class="success">Redirecting to your app agent...</p>
   </div>
   <script>
     // Store auth data and redirect
