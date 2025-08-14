@@ -7,18 +7,21 @@ import { Avatar } from "@/components/avatar/Avatar";
 import { Card } from "@/components/card/Card";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ChatMessage } from "@/components/chat/ChatMessage";
-import { ChatTabs } from "@/components/chat/ChatTabs";
 import { EmptyChat } from "@/components/chat/EmptyChat";
 import { ErrorMessage } from "@/components/chat/ErrorMessage";
 import { LoadingIndicator } from "@/components/chat/LoadingIndicator";
 import { MissingResponseIndicator } from "@/components/chat/MissingResponseIndicator";
-import { PlaybookContainer } from "@/components/chat/PlaybookContainer";
+import { PresentationContainer } from "@/components/chat/PresentationContainer";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
+import { UserProfile } from "./components/auth/UserProfile";
+import { Moon, Sun } from "@phosphor-icons/react";
+import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
+import { useThemePreference } from "./hooks/useThemePreference";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { useAgentAuth } from "./hooks/useAgentAuth";
 import { useAgentState } from "./hooks/useAgentState";
@@ -31,7 +34,7 @@ interface AgentData {
   [key: string]: unknown;
 }
 
-// List of tools that require human confirmation
+// List of tools that require human confirmation for the generic template
 const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
   "getWeatherInformation",
   // Do not add suggestActions here as we want it to display without confirmation
@@ -147,7 +150,8 @@ function SuggestedActions({
 function Chat() {
   // Mobile viewport height fix
   useEffect(() => {
-    // Only run on mobile
+    // Only run on client and mobile
+    if (typeof window === "undefined") return;
     if (window.innerWidth <= 768) {
       const setViewportHeight = () => {
         const vh = window.innerHeight * 0.01;
@@ -169,6 +173,7 @@ function Chat() {
 
   // Add global error handlers for better error handling
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error("Unhandled promise rejection:", event.reason);
 
@@ -202,13 +207,11 @@ function Chat() {
   }, []);
 
   // UI-related state
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    // Check localStorage first, default to dark if not found
-    const savedTheme = localStorage.getItem("theme");
-    return (savedTheme as "dark" | "light") || "dark";
-  });
+  const { theme, toggleTheme } = useThemePreference();
   const [showDebug, setShowDebug] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "playbook">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
+    "presentation"
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Add temporary loading state for smoother mode transitions
   const [temporaryLoading, setTemporaryLoading] = useState(false);
@@ -216,24 +219,7 @@ function Chat() {
   // Add auth context for token expiration checks
   const auth = useAuth();
 
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-  };
-
-  useEffect(() => {
-    // Apply theme class on mount and when theme changes
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
-    }
-
-    // Save theme preference to localStorage
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  // Theme persistence and DOM classes are handled by useThemePreference
 
   // Get authenticated agent configuration
   const agentConfig = useAgentAuth();
@@ -520,7 +506,7 @@ function Chat() {
     reload();
   }, [auth, reload]);
 
-  // Handle custom event for setting chat input from PlaybookPanel
+  // Handle custom event for setting chat input from PresentationPanel
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
     function handleSetChatInput(event: CustomEvent) {
@@ -955,74 +941,118 @@ function Chat() {
     }
   };
 
+  // Floating chat and controls (background rendered at App level)
   return (
-    <div
-      className="w-full p-4 flex justify-center items-center overflow-hidden"
-      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
-    >
-      {/* Main Container - Responsive layout with chat and playbook */}
-      <div
-        className="w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0"
-        style={{ height: "calc(var(--vh, 1vh) * 100 - 2rem)" }}
-      >
-        {/* Chat UI */}
-        <ChatContainer
-          theme={theme}
-          showDebug={showDebug}
-          agentMode={agentMode}
-          inputValue={agentInput}
-          isLoading={isLoading}
-          pendingConfirmation={pendingToolCallConfirmation}
-          activeTab={activeTab}
-          onToggleTheme={toggleTheme}
-          onToggleDebug={() => setShowDebug((prev) => !prev)}
-          onChangeMode={(newMode) => {
-            // Use a temporary loading indicator for better UX
-            // We need this because mode changes don't naturally trigger the isLoading state
-            // since they don't involve an AI response - they're just UI state changes
-            // This gives visual feedback that something is happening
-            setTemporaryLoading(true);
-            setTimeout(() => setTemporaryLoading(false), 1500);
-            changeAgentMode(newMode);
-          }}
-          onClearHistory={handleClearHistory}
-          onInputChange={handleAgentInputChange}
-          onInputSubmit={(e) => {
-            handleSubmitWithRetry(e);
-          }}
-        >
-          {renderMessages()}
-        </ChatContainer>
+    <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
+      {/* Floating chat launcher (desktop + mobile): only shows when chat is hidden */}
+      {activeTab !== "chat" && (
+        <div className="fixed bottom-4 right-6 z-40">
+          <button
+            type="button"
+            aria-label="Open chat"
+            className="rounded-full shadow-lg bg-[#F48120] text-white px-4 py-2 md:px-5 md:py-3"
+            onClick={() => setActiveTab("chat")}
+          >
+            Chat
+          </button>
+        </div>
+      )}
 
-        {/* Playbook Panel */}
-        <PlaybookContainer
-          activeTab={activeTab}
-          agentMode={agentMode}
-          agentState={agentState}
-          showDebug={showDebug}
-        />
+      {/* Floating profile + theme toggle container with safe padding from scrollbar */}
+      <div className="fixed top-4 right-4 z-40 pr-2 md:pr-4 flex items-center gap-2">
+        <UserProfile />
+        <button
+          type="button"
+          aria-label="Toggle theme"
+          className="rounded-full h-9 w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200"
+          onClick={toggleTheme}
+          title="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
       </div>
 
-      {/* Mobile Tabs at the bottom */}
-      <ChatTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Floating Chat Container */}
+      <div
+        className={`fixed left-4 right-4 bottom-4 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] h-[80vh] md:h-[75vh] overflow-hidden z-30 ${
+          activeTab === "chat" ? "block" : "hidden"
+        }`}
+      >
+        <div className="mx-2 md:mx-0 h-full min-h-0 rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
+          <ChatContainer
+            theme={theme}
+            showDebug={showDebug}
+            agentMode={agentMode}
+            inputValue={agentInput}
+            isLoading={isLoading}
+            pendingConfirmation={pendingToolCallConfirmation}
+            activeTab={"chat"}
+            onToggleTheme={toggleTheme}
+            onToggleDebug={() => setShowDebug((prev) => !prev)}
+            onChangeMode={(newMode) => {
+              setTemporaryLoading(true);
+              setTimeout(() => setTemporaryLoading(false), 1500);
+              changeAgentMode(newMode);
+            }}
+            onClearHistory={handleClearHistory}
+            onInputChange={handleAgentInputChange}
+            onInputSubmit={(e) => {
+              handleSubmitWithRetry(e);
+            }}
+            onCloseChat={() => setActiveTab("presentation")}
+          >
+            {renderMessages()}
+          </ChatContainer>
+        </div>
+      </div>
+
+      {/* Mobile Tabs hidden; chat controlled by FAB */}
     </div>
   );
 }
 
-// Main App component with authentication
+// Main App component with authentication - includes styling wrapper
 export default function App() {
   return (
-    <div
-      className="bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900"
-      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
-    >
-      <ErrorBoundary>
-        <AuthProvider>
-          <AuthGuard>
-            <Chat />
-          </AuthGuard>
-        </AuthProvider>
-      </ErrorBoundary>
+    <div className="bg-neutral-50 text-base text-neutral-900 antialiased transition-colors selection:bg-blue-700 selection:text-white dark:bg-neutral-950 dark:text-neutral-100">
+      <div
+        className="bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900"
+        style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+      >
+        <ErrorBoundary>
+          <AuthProvider>
+            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
+              {/* Background Presentation always visible */}
+              <div className="absolute inset-0">
+                <PresentationContainer
+                  activeTab="presentation"
+                  agentMode={"onboarding" as const}
+                  agentState={null}
+                  showDebug={false}
+                  variant="full"
+                />
+              </div>
+              {/* Always-available theme toggle when unauthenticated */}
+              <RootThemeToggle />
+              {/* Auth overlay and authenticated chat */}
+              <AuthGuard>
+                <Chat />
+              </AuthGuard>
+            </div>
+          </AuthProvider>
+        </ErrorBoundary>
+      </div>
+    </div>
+  );
+}
+
+function RootThemeToggle() {
+  const auth = useAuth();
+  const { theme, toggleTheme } = useThemePreference();
+  if (auth?.authMethod) return null;
+  return (
+    <div className="fixed top-4 right-4 z-[60] pr-2 md:pr-4 flex items-center gap-2">
+      <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
     </div>
   );
 }

@@ -81,7 +81,10 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // To avoid hydration mismatches, start with isLoading = true on both server and client
+  // and render a consistent loading shell until client effects run
+  // Start false so SSR shows LandingPage; client effect will validate and update
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
   // Function to sync token with agent database
@@ -180,7 +183,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               if (response.ok) {
                 // Token is valid, use the stored auth and sync with agent
                 setAuthMethod(parsedAuth);
-                await syncTokenWithAgent(parsedAuth);
+                // Defer syncing with agent until after hydration to avoid SSR/client divergence
+                queueMicrotask(() => void syncTokenWithAgent(parsedAuth));
               } else {
                 // Token is invalid, clear it and show sign-in with message
                 console.log("Stored token is invalid, clearing auth");

@@ -1,27 +1,22 @@
-import path from "node:path";
-import { cloudflare } from "@cloudflare/vite-plugin";
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { reactRouter } from "@react-router/dev/vite";
+import { cloudflare as cf } from "@cloudflare/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+import path from "node:path";
 
 export default defineConfig({
   plugins: [
-    cloudflare({
-      inspectorPort: 9329, // Set inspector port to avoid conflicts
-    }),
-    react(),
+    cf({ viteEnvironment: { name: "ssr" } }),
     tailwindcss(),
+    reactRouter(),
+    tsconfigPaths({
+      ignoreConfigErrors: true,
+      projects: [path.resolve(__dirname, "tsconfig.json")],
+    }),
   ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  build: {
-    sourcemap: true, // Enable source maps for better error debugging
-  },
   server: {
-    port: 5273,
+    port: 6001,
     strictPort: true,
   },
 });
