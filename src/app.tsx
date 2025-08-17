@@ -226,7 +226,7 @@ function Chat() {
 
   // Use the agent state hook (must be called before any conditional returns)
   const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig || { agent: "", name: "" }, // Provide fallback to avoid null
+    agentConfig, // Pass null if not authenticated - useAgentState handles this
     "onboarding"
   );
 
@@ -254,7 +254,7 @@ function Chat() {
     reload,
     isLoading,
   } = useAgentChat({
-    agent,
+    agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
     maxSteps: 5,
     onError: (error) => {
       console.error("Error while streaming:", error);
@@ -510,12 +510,49 @@ function Chat() {
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
     function handleSetChatInput(event: CustomEvent) {
-      if (event.detail) {
-        setInput(event.detail.text || "");
+      if (event.detail?.text) {
+        const selectedText = event.detail.text;
+
+        // Check token expiration before proceeding
+        if (auth?.checkTokenExpiration()) {
+          return; // Token expired, user will be redirected to login
+        }
+
         // If we're not in chat tab, switch to it
         if (activeTab !== "chat") {
           setActiveTab("chat");
         }
+
+        // Set the input value first (needed for compatibility with input validation)
+        setInput(selectedText);
+
+        // Then create a synthetic form submit event
+        setTimeout(() => {
+          // Create a new user message
+          const newMessage = {
+            content: selectedText,
+            createdAt: new Date(),
+            id: crypto.randomUUID(),
+            parts: [
+              {
+                text: selectedText,
+                type: "text" as const,
+              },
+            ],
+            role: "user" as const,
+          };
+
+          // Add the message to the chat
+          setMessages([...agentMessages, newMessage]);
+
+          // Clear the input field
+          setInput("");
+
+          // Trigger the agent to respond with token check
+          setTimeout(() => {
+            reloadWithTokenCheck();
+          }, 50);
+        }, 10);
       }
     }
 
@@ -532,7 +569,14 @@ function Chat() {
         handleSetChatInput as EventListener
       );
     };
-  }, [setInput, activeTab]);
+  }, [
+    setInput,
+    activeTab,
+    agentMessages,
+    reloadWithTokenCheck,
+    auth,
+    setMessages,
+  ]);
 
   // Handle action button clicks from the suggestActions tool
   useEffect(() => {
@@ -944,13 +988,13 @@ function Chat() {
   // Floating chat and controls (background rendered at App level)
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-      {/* Floating chat launcher (desktop + mobile): only shows when chat is hidden */}
+      {/* Floating chat launcher (mobile: corner button, desktop: corner button) */}
       {activeTab !== "chat" && (
-        <div className="fixed bottom-4 right-6 z-40">
+        <div className="fixed bottom-4 right-4 z-[60]">
           <button
             type="button"
             aria-label="Open chat"
-            className="rounded-full shadow-lg bg-[#F48120] text-white px-4 py-2 md:px-5 md:py-3"
+            className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
             onClick={() => setActiveTab("chat")}
           >
             Chat
@@ -958,27 +1002,13 @@ function Chat() {
         </div>
       )}
 
-      {/* Floating profile + theme toggle container with safe padding from scrollbar */}
-      <div className="fixed top-4 right-4 z-40 pr-2 md:pr-4 flex items-center gap-2">
-        <UserProfile />
-        <button
-          type="button"
-          aria-label="Toggle theme"
-          className="rounded-full h-9 w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200"
-          onClick={toggleTheme}
-          title="Toggle theme"
-        >
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-      </div>
-
-      {/* Floating Chat Container */}
+      {/* Floating Chat Container - mobile: full screen, desktop: corner panel */}
       <div
-        className={`fixed left-4 right-4 bottom-4 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] h-[80vh] md:h-[75vh] overflow-hidden z-30 ${
+        className={`fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-[75vh] md:inset-auto overflow-hidden z-[70] ${
           activeTab === "chat" ? "block" : "hidden"
         }`}
       >
-        <div className="mx-2 md:mx-0 h-full min-h-0 rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
+        <div className="h-full md:mx-0 md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
           <ChatContainer
             theme={theme}
             showDebug={showDebug}
@@ -1021,20 +1051,16 @@ export default function App() {
       >
         <ErrorBoundary>
           <AuthProvider>
-            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-              {/* Background Presentation always visible */}
-              <div className="absolute inset-0">
-                <PresentationContainer
-                  activeTab="presentation"
-                  agentMode={"onboarding" as const}
-                  agentState={null}
-                  showDebug={false}
-                  variant="full"
-                />
+            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
+              {/* Background Presentation Panel - always visible */}
+              <div className="absolute inset-0 z-50">
+                <BackgroundPresentationPanel />
               </div>
               {/* Always-available theme toggle when unauthenticated */}
               <RootThemeToggle />
-              {/* Auth overlay and authenticated chat */}
+              {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+              <AuthenticatedTopPanel />
+              {/* Auth overlay and authenticated content */}
               <AuthGuard>
                 <Chat />
               </AuthGuard>
@@ -1046,6 +1072,46 @@ export default function App() {
   );
 }
 
+// Background presentation panel that shows with or without agent state
+function BackgroundPresentationPanel() {
+  const auth = useAuth();
+
+  // If not authenticated, show presentation panel without agent state
+  if (!auth?.authMethod) {
+    return (
+      <PresentationContainer
+        activeTab="presentation"
+        agentMode={"onboarding" as const}
+        agentState={null}
+        showDebug={false}
+        variant="full"
+      />
+    );
+  }
+
+  // If authenticated, show presentation panel with agent state
+  return <AuthenticatedPresentationPanel />;
+}
+
+// Component that renders the presentation panel with agent state when authenticated
+function AuthenticatedPresentationPanel() {
+  // Get authenticated agent configuration
+  const agentConfig = useAgentAuth();
+
+  // Use the agent state hook
+  const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
+
+  return (
+    <PresentationContainer
+      activeTab="presentation"
+      agentMode={agentMode}
+      agentState={agentState}
+      showDebug={false}
+      variant="full"
+    />
+  );
+}
+
 function RootThemeToggle() {
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
@@ -1053,6 +1119,47 @@ function RootThemeToggle() {
   return (
     <div className="fixed top-4 right-4 z-[60] pr-2 md:pr-4 flex items-center gap-2">
       <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+    </div>
+  );
+}
+
+function AuthenticatedTopPanel() {
+  const auth = useAuth();
+  const { theme, toggleTheme } = useThemePreference();
+  const agentConfig = useAgentAuth();
+  const { agentMode } = useAgentState(agentConfig, "onboarding");
+  const [_showDebug, _setShowDebug] = useState(false);
+  const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
+    "presentation"
+  );
+
+  // Only render if authenticated
+  if (!auth?.authMethod) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Toggle theme"
+          className="rounded-full h-10 w-10 md:h-9 md:w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 order-2 md:order-1"
+          onClick={toggleTheme}
+          title="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+        <div className="order-1 md:order-2">
+          <UserProfile />
+        </div>
+      </div>
+      {/* Mobile: show current mode */}
+      <div className="md:hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 capitalize">
+        {agentMode}
+      </div>
     </div>
   );
 }

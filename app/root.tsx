@@ -4,6 +4,10 @@ import "../src/styles.css";
 export const meta = () => [
   { title: "App Agent Template" },
   {
+    name: "viewport",
+    content: "width=device-width, initial-scale=1.0",
+  },
+  {
     name: "description",
     content: "AI-powered chat agent built with Cloudflare Agents",
   },
@@ -14,16 +18,18 @@ export const meta = () => [
   },
   { property: "og:type", content: "website" },
   { property: "og:site_name", content: "App Agent Template" },
-  { property: "og:image", content: "/favicon.ico" },
+  { property: "og:image", content: "/api/og-image" },
   { name: "twitter:card", content: "summary_large_image" },
   { name: "twitter:title", content: "App Agent Template" },
   {
     name: "twitter:description",
     content: "AI-powered chat agent built with Cloudflare Agents",
   },
-  { name: "twitter:image", content: "/favicon.ico" },
+  { name: "twitter:image", content: "/api/og-image" },
 ];
-export const links = () => [];
+export const links = () => [
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
         {/* Set theme class before hydration to avoid FOUC/mismatch */}
         <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme setup script
           dangerouslySetInnerHTML={{
             __html:
               "(function(){try{var t=localStorage.getItem('theme');var d=t? t==='dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);var de=document.documentElement;de.classList.toggle('dark',d);de.classList.toggle('light',!d);}catch(e){}})();",
