@@ -143,15 +143,48 @@ export function PresentationPanel({
   return (
     // Behave as full-background friendly panel with max width for better readability
     <div className="h-full w-full bg-white dark:bg-neutral-900 p-3 md:p-4 overflow-auto">
-      <div className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
-        chatIsOpen ? "md:mr-[540px] md:pr-4" : "md:pr-8"
-      }`}>
+      <div
+        className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
+          chatIsOpen ? "md:mr-[540px] md:pr-4" : "md:pr-8"
+        }`}
+      >
         <div className="flex items-center gap-2 mb-3">
           <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
           <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
         </div>
 
         <div className="space-y-4">
+          {/* Idea Selector - Show if multiple ideas exist */}
+          {agentState?.ideas && agentState.ideas.length > 1 && (
+            <Card className="p-3 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Ideas ({agentState.ideas.length})
+                  </span>
+                  <span className="text-xs text-blue-600 dark:text-blue-300">
+                    Currently assessing: {assessmentData.title}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {agentState.ideas.map((idea, index) => (
+                    <div
+                      key={idea.idea_id}
+                      className={`px-2 py-1 text-xs rounded ${
+                        idea.idea_id === agentState.currentIdea?.idea_id
+                          ? "bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200"
+                          : "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300"
+                      }`}
+                      title={idea.title}
+                    >
+                      {index + 1}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* IdeaPotential Assessment - Always Show */}
           <div>
             {/* Idea Overview */}

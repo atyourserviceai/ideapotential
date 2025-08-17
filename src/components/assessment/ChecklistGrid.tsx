@@ -156,7 +156,7 @@ export function ChecklistGrid({ checklist, derived }: ChecklistGridProps) {
                   {evidenceCount} evidence item{evidenceCount !== 1 ? "s" : ""}
                   {evidenceStrength > 0 && (
                     <span className="ml-1">
-                      (strength: {evidenceStrength}/3)
+                      (evidence strength: {evidenceStrength}/3)
                     </span>
                   )}
                 </div>

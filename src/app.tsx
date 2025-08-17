@@ -1112,7 +1112,11 @@ function BackgroundPresentationPanel({ chatIsOpen }: { chatIsOpen: boolean }) {
 }
 
 // Component that renders the presentation panel with agent state when authenticated
-function AuthenticatedPresentationPanel({ chatIsOpen }: { chatIsOpen: boolean }) {
+function AuthenticatedPresentationPanel({
+  chatIsOpen,
+}: {
+  chatIsOpen: boolean;
+}) {
   // Get authenticated agent configuration
   const agentConfig = useAgentAuth();
 

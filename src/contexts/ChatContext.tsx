@@ -8,7 +8,9 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [activeTab, setActiveTab] = useState<"chat" | "presentation">("presentation");
+  const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
+    "presentation"
+  );
 
   return (
     <ChatContext.Provider value={{ activeTab, setActiveTab }}>

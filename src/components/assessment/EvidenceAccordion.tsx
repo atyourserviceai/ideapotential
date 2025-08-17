@@ -146,7 +146,7 @@ export function EvidenceAccordion({ checklist }: EvidenceAccordionProps) {
               </div>
 
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                Strength: {item.evidence_strength}/3
+                Evidence Strength: {item.evidence_strength}/3
               </div>
             </button>
 
