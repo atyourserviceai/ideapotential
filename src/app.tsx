@@ -19,6 +19,7 @@ import { AuthGuard } from "./components/auth/AuthGuard";
 import { UserProfile } from "./components/auth/UserProfile";
 import { Moon, Sun } from "@phosphor-icons/react";
 import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
+import { ChatProvider, useChatContext } from "./contexts/ChatContext";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import { useThemePreference } from "./hooks/useThemePreference";
@@ -209,9 +210,7 @@ function Chat() {
   // UI-related state
   const { theme, toggleTheme } = useThemePreference();
   const [showDebug, setShowDebug] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
-    "presentation"
-  );
+  const { activeTab, setActiveTab } = useChatContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Add temporary loading state for smoother mode transitions
   const [temporaryLoading, setTemporaryLoading] = useState(false);
@@ -985,10 +984,10 @@ function Chat() {
     }
   };
 
-  // Floating chat and controls (background rendered at App level)
+  // Layout: Unified chat panel that adapts to mobile/desktop
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-      {/* Floating chat launcher (mobile: corner button, desktop: corner button) */}
+      {/* Floating chat launcher */}
       {activeTab !== "chat" && (
         <div className="fixed bottom-4 right-4 z-[60]">
           <button
@@ -1002,13 +1001,20 @@ function Chat() {
         </div>
       )}
 
-      {/* Floating Chat Container - mobile: full screen, desktop: corner panel */}
+      {/* Chat Panel - responsive: mobile overlay, desktop side panel */}
       <div
-        className={`fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-[75vh] md:inset-auto overflow-hidden z-[70] ${
-          activeTab === "chat" ? "block" : "hidden"
-        }`}
+        className={`
+          fixed z-[70] transition-transform duration-300 ease-in-out
+          ${activeTab === "chat" ? "translate-x-0" : "translate-x-full"}
+          
+          /* Mobile: full screen overlay */
+          inset-0 md:inset-auto
+          
+          /* Desktop: side panel from right with top margin for header elements */
+          md:top-16 md:right-4 md:bottom-4 md:w-[520px] md:h-auto
+        `}
       >
-        <div className="h-full md:mx-0 md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
+        <div className="h-full w-full md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
           <ChatContainer
             theme={theme}
             showDebug={showDebug}
@@ -1051,20 +1057,9 @@ export default function App() {
       >
         <ErrorBoundary>
           <AuthProvider>
-            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
-              {/* Background Presentation Panel - always visible */}
-              <div className="absolute inset-0 z-50">
-                <BackgroundPresentationPanel />
-              </div>
-              {/* Always-available theme toggle when unauthenticated */}
-              <RootThemeToggle />
-              {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-              <AuthenticatedTopPanel />
-              {/* Auth overlay and authenticated content */}
-              <AuthGuard>
-                <Chat />
-              </AuthGuard>
-            </div>
+            <ChatProvider>
+              <AppContent />
+            </ChatProvider>
           </AuthProvider>
         </ErrorBoundary>
       </div>
@@ -1072,8 +1067,30 @@ export default function App() {
   );
 }
 
+// App content that has access to chat context
+function AppContent() {
+  const { activeTab } = useChatContext();
+
+  return (
+    <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
+      {/* Background Presentation Panel - always visible */}
+      <div className="absolute inset-0 z-50">
+        <BackgroundPresentationPanel chatIsOpen={activeTab === "chat"} />
+      </div>
+      {/* Always-available theme toggle when unauthenticated */}
+      <RootThemeToggle />
+      {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+      <AuthenticatedTopPanel />
+      {/* Auth overlay and authenticated content */}
+      <AuthGuard>
+        <Chat />
+      </AuthGuard>
+    </div>
+  );
+}
+
 // Background presentation panel that shows with or without agent state
-function BackgroundPresentationPanel() {
+function BackgroundPresentationPanel({ chatIsOpen }: { chatIsOpen: boolean }) {
   const auth = useAuth();
 
   // If not authenticated, show presentation panel without agent state
@@ -1085,16 +1102,17 @@ function BackgroundPresentationPanel() {
         agentState={null}
         showDebug={false}
         variant="full"
+        chatIsOpen={chatIsOpen}
       />
     );
   }
 
   // If authenticated, show presentation panel with agent state
-  return <AuthenticatedPresentationPanel />;
+  return <AuthenticatedPresentationPanel chatIsOpen={chatIsOpen} />;
 }
 
 // Component that renders the presentation panel with agent state when authenticated
-function AuthenticatedPresentationPanel() {
+function AuthenticatedPresentationPanel({ chatIsOpen }: { chatIsOpen: boolean }) {
   // Get authenticated agent configuration
   const agentConfig = useAgentAuth();
 
@@ -1108,6 +1126,7 @@ function AuthenticatedPresentationPanel() {
       agentState={agentState}
       showDebug={false}
       variant="full"
+      chatIsOpen={chatIsOpen}
     />
   );
 }

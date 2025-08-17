@@ -19,6 +19,7 @@ interface PresentationPanelProps {
   agentState: AppAgentState;
   agentMode: AgentMode;
   showDebug: boolean;
+  chatIsOpen?: boolean;
 }
 
 declare global {
@@ -30,6 +31,7 @@ declare global {
 export function PresentationPanel({
   agentState,
   showDebug,
+  chatIsOpen = false,
 }: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const agentSettingsId = useId();
@@ -139,149 +141,153 @@ export function PresentationPanel({
   };
 
   return (
-    // Behave as full-background friendly panel (fills parent)
+    // Behave as full-background friendly panel with max width for better readability
     <div className="h-full w-full bg-white dark:bg-neutral-900 p-3 md:p-4 overflow-auto">
-      <div className="flex items-center gap-2 mb-3">
-        <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
-        <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
-      </div>
+      <div className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
+        chatIsOpen ? "md:mr-[540px] md:pr-4" : "md:pr-8"
+      }`}>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
+          <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
+        </div>
 
-      <div className="space-y-4">
-        {/* IdeaPotential Assessment - Always Show */}
-        <div>
-          {/* Idea Overview */}
-          <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-            <div className="mb-4">
-              <h3 className="font-medium text-base md:text-lg">
-                {assessmentData.title}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {assessmentData.one_liner}
-              </p>
-              {hasAssessment && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
-                  <span>Stage: {assessmentData.stage}</span>
-                  <span>
-                    Updated:{" "}
-                    {new Date(assessmentData.updated_at).toLocaleDateString()}
-                  </span>
+        <div className="space-y-4">
+          {/* IdeaPotential Assessment - Always Show */}
+          <div>
+            {/* Idea Overview */}
+            <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
+              <div className="mb-4">
+                <h3 className="font-medium text-base md:text-lg">
+                  {assessmentData.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {assessmentData.one_liner}
+                </p>
+                {hasAssessment && (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
+                    <span>Stage: {assessmentData.stage}</span>
+                    <span>
+                      Updated:{" "}
+                      {new Date(assessmentData.updated_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                {(() => {
+                  return !hasAssessment ? (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors text-sm"
+                        onClick={() => {
+                          setChatInput("I want to assess my startup idea");
+                        }}
+                      >
+                        Start Assessment
+                      </button>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+
+              {/* Score Dials */}
+              <div className="flex justify-center gap-8 mb-4">
+                <ScoreDial
+                  derived={assessmentData.derived}
+                  scoreType="potential"
+                />
+                <ScoreDial
+                  derived={assessmentData.derived}
+                  scoreType="actualization"
+                />
+              </div>
+
+              {/* Recommended Tweak */}
+              {hasAssessment && assessmentData.recommended_tweak && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-medium text-sm text-blue-800 dark:text-blue-200 mb-1">
+                    Recommended Next Step
+                  </h4>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    {assessmentData.recommended_tweak}
+                  </p>
                 </div>
               )}
-              {(() => {
-                return !hasAssessment ? (
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors text-sm"
-                      onClick={() => {
-                        setChatInput("I want to assess my startup idea");
-                      }}
-                    >
-                      Start Assessment
-                    </button>
-                  </div>
-                ) : null;
-              })()}
-            </div>
 
-            {/* Score Dials */}
-            <div className="flex justify-center gap-8 mb-4">
-              <ScoreDial
-                derived={assessmentData.derived}
-                scoreType="potential"
-              />
-              <ScoreDial
-                derived={assessmentData.derived}
-                scoreType="actualization"
-              />
-            </div>
+              {!hasAssessment && (
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Start by describing your startup idea to begin the
+                    assessment process. The AI will guide you through evaluating
+                    10 critical factors.
+                  </p>
+                </div>
+              )}
+            </Card>
 
-            {/* Recommended Tweak */}
-            {hasAssessment && assessmentData.recommended_tweak && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <h4 className="font-medium text-sm text-blue-800 dark:text-blue-200 mb-1">
-                  Recommended Next Step
-                </h4>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  {assessmentData.recommended_tweak}
-                </p>
-              </div>
-            )}
-
-            {!hasAssessment && (
-              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Start by describing your startup idea to begin the assessment
-                  process. The AI will guide you through evaluating 10 critical
-                  factors.
-                </p>
-              </div>
-            )}
-          </Card>
-
-          {/* Checklist Grid */}
-          <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-            <ChecklistGrid
-              checklist={checklistForUi}
-              derived={assessmentData.derived}
-            />
-          </Card>
-
-          {/* Evidence Accordion - Only show if there's actual assessment */}
-          {hasAssessment && (
+            {/* Checklist Grid */}
             <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-              <EvidenceAccordion checklist={checklistForUi} />
+              <ChecklistGrid
+                checklist={checklistForUi}
+                derived={assessmentData.derived}
+              />
+            </Card>
+
+            {/* Evidence Accordion - Only show if there's actual assessment */}
+            {hasAssessment && (
+              <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
+                <EvidenceAccordion checklist={checklistForUi} />
+              </Card>
+            )}
+          </div>
+
+          {/* Agent Settings - Show only in debug mode */}
+          {showDebug && hasSettings && (
+            <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">Agent Settings</h3>
+                <button
+                  type="button"
+                  className="text-xs px-2 py-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                  onClick={() => copyToClipboard(formatSettings(), "settings")}
+                >
+                  {copiedSection === "settings" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <div className="markdown-content text-sm max-h-[300px] overflow-auto">
+                <MemoizedMarkdown
+                  id={agentSettingsId}
+                  content={formatSettings()}
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* Raw State (Debug Mode Only) */}
+          {showDebug && (
+            <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">Raw Agent State</h3>
+                <button
+                  type="button"
+                  className="text-xs px-2 py-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                  onClick={() =>
+                    copyToClipboard(
+                      JSON.stringify(agentState, null, 2),
+                      "raw-state"
+                    )
+                  }
+                >
+                  {copiedSection === "raw-state" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <div className="text-sm">
+                <pre className="bg-neutral-200 dark:bg-neutral-800 p-2 rounded overflow-auto text-xs max-h-[500px]">
+                  {JSON.stringify(agentState, null, 2)}
+                </pre>
+              </div>
             </Card>
           )}
         </div>
-
-        {/* Agent Settings - Show at bottom if they exist */}
-        {hasSettings && (
-          <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Agent Settings</h3>
-              <button
-                type="button"
-                className="text-xs px-2 py-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-800"
-                onClick={() => copyToClipboard(formatSettings(), "settings")}
-              >
-                {copiedSection === "settings" ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <div className="markdown-content text-sm max-h-[300px] overflow-auto">
-              <MemoizedMarkdown
-                id={agentSettingsId}
-                content={formatSettings()}
-              />
-            </div>
-          </Card>
-        )}
-
-        {/* Raw State (Debug Mode Only) */}
-        {showDebug && (
-          <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Raw Agent State</h3>
-              <button
-                type="button"
-                className="text-xs px-2 py-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-800"
-                onClick={() =>
-                  copyToClipboard(
-                    JSON.stringify(agentState, null, 2),
-                    "raw-state"
-                  )
-                }
-              >
-                {copiedSection === "raw-state" ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <div className="text-sm">
-              <pre className="bg-neutral-200 dark:bg-neutral-800 p-2 rounded overflow-auto text-xs max-h-[500px]">
-                {JSON.stringify(agentState, null, 2)}
-              </pre>
-            </div>
-          </Card>
-        )}
       </div>
     </div>
   );
