@@ -1,13 +1,13 @@
 {
-  "name": "foo-agent",
+  "name": "ideapotential",
   "version": "1.0.0",
-  "description": "",
+  "description": "AI-powered startup idea validation tool with 10-factor assessment",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "react-router dev --port 5273",
+    "dev": "react-router dev --port 5773",
     "build": "react-router build",
-    "preview": "vite preview --port 5273",
+    "preview": "vite preview --port 5773",
     "deploy": "react-router build && wrangler deploy",
     "deploy:staging": "CLOUDFLARE_ENV=staging pnpm run deploy",
     "deploy:production": "CLOUDFLARE_ENV=production pnpm run deploy",
@@ -19,11 +19,15 @@
     "check": "prettier . --check && biome lint && tsc"
   },
   "keywords": [
-    "cloudflare",
+    "startup",
+    "validation",
+    "assessment",
     "ai",
-    "agents"
+    "agents",
+    "cloudflare",
+    "ideapotential"
   ],
-  "author": "",
+  "author": "AtYourService.ai",
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
@@ -65,7 +69,9 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "composio-core": "^0.5.39",
+    "html2canvas": "^1.4.1",
     "jsdom": "^26.1.0",
+    "jspdf": "^2.5.2",
     "marked": "^15.0.12",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
