@@ -263,7 +263,7 @@ export class AppAgent extends AIChatAgent<Env> {
   initialState: AppAgentState = {
     isIntegrationComplete: false,
     isOnboardingComplete: false,
-    mode: "onboarding" as AgentMode,
+    mode: "act" as AgentMode, // Default to act mode for MVP
     onboardingStep: "start",
     settings: {
       adminContact: {
@@ -290,9 +290,9 @@ export class AppAgent extends AIChatAgent<Env> {
       !["onboarding", "integration", "plan", "act"].includes(state.mode)
     ) {
       console.log(
-        "[AppAgent] No valid mode found in state, defaulting to onboarding mode"
+        "[AppAgent] No valid mode found in state, defaulting to act mode"
       );
-      state.mode = "onboarding";
+      state.mode = "act"; // Default to act mode for MVP
     }
 
     // Ensure settings exists
@@ -431,15 +431,12 @@ export class AppAgent extends AIChatAgent<Env> {
       // Context tools
       getWeatherInformation: tools.getWeatherInformation,
 
-      // Search tools
-      runResearch: tools.runResearch,
-
       // Scheduling tools
       scheduleTask: tools.scheduleTask,
       setMode: tools.setMode,
 
-      // Messaging tools
-      suggestActions: tools.suggestActions,
+      // Messaging tools (limited for MVP)
+      // suggestActions: tools.suggestActions, // Disabled - not working well
     };
 
     // Mode-specific tools
@@ -466,9 +463,14 @@ export class AppAgent extends AIChatAgent<Env> {
         } as ToolSet;
 
       case "act":
-        // Action mode - enable all tools for execution
+        // Action mode - enable assessment tools for idea validation
         return {
           ...baseTools,
+          // Assessment tools for idea validation
+          getAssessmentState: tools.getAssessmentState,
+          storeIdeaInformation: tools.storeIdeaInformation,
+          storeConversationInsights: tools.storeConversationInsights,
+          updateFactorScore: tools.updateFactorScore,
           testErrorTool: tools.testErrorTool,
         } as ToolSet;
 

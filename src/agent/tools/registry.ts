@@ -73,9 +73,10 @@ export const schedulingTools = wrapAllToolsWithErrorHandling(
 export const searchTools = wrapAllToolsWithErrorHandling(
   rawSearchTools.searchTools as unknown as ToolCollection
 );
-export const runResearch = wrapToolWithErrorHandling(
-  rawSearchTools.runResearch as unknown as Tool
-);
+// Disabled for MVP - placeholder tool removed
+// export const runResearch = wrapToolWithErrorHandling(
+//   rawSearchTools.runResearch as unknown as Tool
+// );
 export const simpleFetchTools = wrapAllToolsWithErrorHandling(
   rawSimpleFetchTools as unknown as ToolCollection
 );
@@ -178,7 +179,7 @@ export const tools = {
 
   // Search tools
   ...searchTools,
-  runResearch,
+  // runResearch, // Disabled for MVP
 
   // Test error tool
   testErrorTool,
