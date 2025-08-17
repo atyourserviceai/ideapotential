@@ -12,6 +12,24 @@ import type {
 import { calculateDerivedScores } from "../utils/scoring-utils";
 
 /**
+ * Helper function to get idea progress summary
+ */
+function getIdeaProgress(idea: Idea): string {
+  const factors = Object.values(idea.checklist || {});
+  const scored = factors.filter(
+    (f) => f.score !== null && f.score !== undefined
+  ).length;
+  const totalFactors = factors.length;
+  const percentage =
+    totalFactors > 0 ? Math.round((scored / totalFactors) * 100) : 0;
+
+  if (percentage === 0) return "not started";
+  if (percentage < 50) return `${percentage}% complete (early stage)`;
+  if (percentage < 100) return `${percentage}% complete (in progress)`;
+  return "assessment complete";
+}
+
+/**
  * Store or update basic idea information extracted from conversation
  */
 export const storeIdeaInformation = tool({
@@ -534,3 +552,70 @@ function calculateEvidenceStrength(evidence: Evidence[]): 0 | 1 | 2 | 3 {
   if (hasMultipleSources || evidence.length >= 2) return 1;
   return 1;
 }
+
+/**
+ * Select which idea to focus the conversation on
+ */
+export const selectIdea = tool({
+  description:
+    "Select which idea to focus the conversation on, or start working on a new idea",
+  parameters: z.object({
+    ideaId: z
+      .string()
+      .describe("ID of the idea to select, or 'new' for starting a new idea"),
+    reason: z.string().optional().describe("Why switching to this idea"),
+  }),
+  execute: async ({ ideaId, reason }) => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+
+      if (ideaId === "new") {
+        // Reset to empty state for new idea
+        const newState: AppAgentState = {
+          ...currentState,
+          currentIdea: undefined,
+          assessmentProgress: {
+            currentStep: 0,
+            totalSteps: 10,
+            completedFactors: [],
+            isAssessmentComplete: false,
+          },
+        };
+
+        await agent.setState(newState);
+
+        return "Ready to work on a new idea. Please describe your startup concept and I'll guide you through the assessment.";
+      }
+
+      const idea = currentState.ideas?.find((i) => i.idea_id === ideaId);
+      if (!idea) {
+        const availableIdeas =
+          currentState.ideas
+            ?.map((i) => `"${i.title}" (${i.idea_id})`)
+            .join(", ") || "none";
+        return `Idea not found. Available ideas: ${availableIdeas}`;
+      }
+
+      const newState: AppAgentState = {
+        ...currentState,
+        currentIdea: idea,
+      };
+
+      await agent.setState(newState);
+
+      const progress = getIdeaProgress(idea);
+      const reasonText = reason ? ` (${reason})` : "";
+
+      return `Now focusing on "${idea.title}"${reasonText}. Current status: ${progress}. How would you like to continue working on this idea?`;
+    } catch (error) {
+      console.error("Error in selectIdea:", error);
+      return `Error selecting idea: ${error instanceof Error ? error.message : "Unknown error"}`;
+    }
+  },
+});

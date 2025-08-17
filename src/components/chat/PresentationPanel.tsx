@@ -5,6 +5,7 @@ import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ChecklistGrid } from "@/components/assessment/ChecklistGrid";
 import { ScoreDial } from "@/components/assessment/ScoreDial";
 import { EvidenceAccordion } from "@/components/assessment/EvidenceAccordion";
+import { IdeaSwitcher } from "@/components/assessment/IdeaSwitcher";
 import type {
   Idea,
   ChecklistKey,
@@ -51,6 +52,17 @@ export function PresentationPanel({
     );
   };
 
+  // Handle idea switching
+  const handleIdeaChange = (ideaId: string) => {
+    if (ideaId === "new") {
+      // Trigger agent to start new idea
+      setChatInput("I want to assess a new startup idea");
+    } else {
+      // Trigger agent to switch to existing idea
+      setChatInput(`Switch to working on idea: ${ideaId}`);
+    }
+  };
+
   // Check if we have any meaningful content to display
   const hasSettings =
     agentState?.settings &&
@@ -89,8 +101,8 @@ export function PresentationPanel({
     };
     return {
       idea_id: "empty",
-      title: "Your Startup Idea",
-      one_liner: "Describe your startup idea to begin assessment",
+      title: "Ready to validate your startup idea?",
+      one_liner: "Get a brutally honest assessment in 15 minutes",
       stage: "concept",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -154,36 +166,11 @@ export function PresentationPanel({
         </div>
 
         <div className="space-y-4">
-          {/* Idea Selector - Show if multiple ideas exist */}
-          {agentState?.ideas && agentState.ideas.length > 1 && (
-            <Card className="p-3 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                    Ideas ({agentState.ideas.length})
-                  </span>
-                  <span className="text-xs text-blue-600 dark:text-blue-300">
-                    Currently assessing: {assessmentData.title}
-                  </span>
-                </div>
-                <div className="flex gap-1">
-                  {agentState.ideas.map((idea, index) => (
-                    <div
-                      key={idea.idea_id}
-                      className={`px-2 py-1 text-xs rounded ${
-                        idea.idea_id === agentState.currentIdea?.idea_id
-                          ? "bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200"
-                          : "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300"
-                      }`}
-                      title={idea.title}
-                    >
-                      {index + 1}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          )}
+          {/* Always-visible Idea Switcher */}
+          <IdeaSwitcher
+            agentState={agentState}
+            onIdeaChange={handleIdeaChange}
+          />
 
           {/* IdeaPotential Assessment - Always Show */}
           <div>
@@ -215,7 +202,7 @@ export function PresentationPanel({
                           setChatInput("I want to assess my startup idea");
                         }}
                       >
-                        Start Assessment
+                        Start Free Assessment
                       </button>
                     </div>
                   ) : null;
@@ -247,12 +234,20 @@ export function PresentationPanel({
               )}
 
               {!hasAssessment && (
-                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Start by describing your startup idea to begin the
-                    assessment process. The AI will guide you through evaluating
-                    10 critical factors.
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    🚀 Skip months of uncertainty
+                  </h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                    Get a systematic assessment of your startup's potential
+                    across 10 critical factors. Our AI will guide you through
+                    evidence-based validation questions.
                   </p>
+                  <div className="flex items-center gap-4 text-xs text-blue-700 dark:text-blue-300">
+                    <span>✓ 15-minute assessment</span>
+                    <span>✓ Actionable insights</span>
+                    <span>✓ Data-driven scoring</span>
+                  </div>
                 </div>
               )}
             </Card>

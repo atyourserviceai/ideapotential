@@ -154,6 +154,7 @@ export const tools = {
   storeIdeaInformation: assessmentTools.storeIdeaInformation,
   storeConversationInsights: assessmentTools.storeConversationInsights,
   updateFactorScore: assessmentTools.updateFactorScore,
+  selectIdea: assessmentTools.selectIdea,
 
   // State access tools
   getAgentState: stateTools.getAgentState,
