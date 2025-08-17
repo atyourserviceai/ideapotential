@@ -575,6 +575,7 @@ function Chat() {
     reloadWithTokenCheck,
     auth,
     setMessages,
+    setActiveTab,
   ]);
 
   // Handle action button clicks from the suggestActions tool
@@ -1006,10 +1007,10 @@ function Chat() {
         className={`
           fixed z-[70] transition-transform duration-300 ease-in-out
           ${activeTab === "chat" ? "translate-x-0" : "translate-x-full"}
-          
+
           /* Mobile: full screen overlay */
           inset-0 md:inset-auto
-          
+
           /* Desktop: side panel from right with top margin for header elements */
           md:top-16 md:right-4 md:bottom-4 md:w-[520px] md:h-auto
         `}
@@ -1163,7 +1164,7 @@ function AuthenticatedTopPanel() {
 
   return (
     <div
-      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
+      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[90] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
     >
       <div className="flex items-center gap-2">
         <button
