@@ -100,6 +100,115 @@ export function getErrorMessage(error: unknown): string {
 // Agent operating modes
 export type AgentMode = "onboarding" | "integration" | "plan" | "act";
 
+// IdeaPotential types for startup idea assessment
+export type ChecklistKey =
+  | "problem_clarity"
+  | "market_pain_mentions"
+  | "outcome_gap"
+  | "competitive_moat"
+  | "team_solution_fit"
+  | "solution_evidence"
+  | "team_market_fit"
+  | "early_demand"
+  | "traffic_authority"
+  | "marketing_product_fit";
+
+export interface Evidence {
+  evidence_id: string;
+  // Expanded to include conversational and analysis sources used by tools
+  type:
+    | "manual_input"
+    | "auto_fetch"
+    | "peer_proof"
+    | "prospect_pulse"
+    | "seo_metric"
+    | "social_metric"
+    | "survey_response"
+    | "conversation"
+    | "user_statement"
+    | "market_research"
+    | "competitive_analysis"
+    | "demo_feedback"
+    | "metrics"
+    | "other";
+  source?: string;
+  value: unknown;
+  confidence?: number;
+  notes?: string;
+  reasoning?: string;
+  timestamp: string;
+  added_by: "agent" | "system" | "user";
+}
+
+export interface ChecklistItem {
+  score: number | null;
+  evidence_strength: 0 | 1 | 2 | 3;
+  evidence: Evidence[];
+  last_scored_at?: string;
+}
+
+export interface DerivedScores {
+  potential_score: number;
+  actualization_score: number;
+  potential_bucket: "unknown" | "red" | "yellow" | "green";
+  actualization_bucket: "unknown" | "red" | "yellow" | "green";
+}
+
+export interface IdeaMetrics {
+  waitlist_signups?: number;
+  mrr?: number;
+  lois?: number;
+  pain_mentions?: { online: number; conversations: number };
+}
+
+export interface ConversationInsight {
+  id: string;
+  type:
+    | "user_quote"
+    | "market_insight"
+    | "competitive_intel"
+    | "user_behavior"
+    | "pain_point"
+    | "solution_feedback"
+    | "other";
+  content: string;
+  factor_related?: ChecklistKey;
+  confidence_level?: number;
+  timestamp: string;
+}
+
+export interface Idea {
+  idea_id: string;
+  title: string;
+  one_liner: string;
+  description?: string;
+  // Additional descriptive fields used by assessment tools and UI
+  founder_background?: string;
+  target_market?: string;
+  business_model?: string;
+  conversation_insights?: ConversationInsight[];
+  stage: "concept" | "pre-MVP" | "MVP" | "post-launch";
+  created_at: string;
+  updated_at: string;
+  metrics: IdeaMetrics;
+  checklist: Record<ChecklistKey, ChecklistItem>;
+  derived: DerivedScores;
+  recommended_tweak?: string;
+}
+
+export interface FounderProfile {
+  id: string;
+  name?: string;
+  email?: string;
+  experience_years?: number;
+  team_size?: number;
+  passion_score?: number;
+  unfair_advantage?: string;
+  timezone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Define AppAgentState interface for proper typing
 export interface AppAgentState {
   mode: AgentMode;
@@ -129,6 +238,17 @@ export interface AppAgentState {
   testReport?: TestReport;
   isIntegrationComplete?: boolean;
   transitionRecommendation?: TransitionRecommendation;
+
+  // IdeaPotential assessment state
+  founderProfile?: FounderProfile;
+  currentIdea?: Idea;
+  ideas?: Idea[];
+  assessmentProgress?: {
+    currentStep: number;
+    totalSteps: number;
+    completedFactors: ChecklistKey[];
+    isAssessmentComplete: boolean;
+  };
 
   // Optional metadata
   _lastModeChange?: string;

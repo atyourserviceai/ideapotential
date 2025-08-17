@@ -10,11 +10,12 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
         {/* Hero Section */}
         <div className="text-center mb-8 md:mb-12">
           <div className="inline-block max-w-4xl w-full mx-auto rounded-2xl bg-transparent supports-[backdrop-filter]:backdrop-blur-[8px] px-4 md:px-6 lg:px-10 py-6 md:py-8 lg:py-10">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3 leading-tight">
-              App Agent Template
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              The #1 Idea Grader for Pre-Revenue Indie Founders & Bootstrapped
+              Startups
             </h1>
             <p className="text-lg md:text-xl text-gray-800 dark:text-gray-200 mb-2">
-              A clean foundation for Cloudflare Worker agents with a modern UX.
+              Spend two minutes to know if your mountain is worth climbing.
             </p>
             <p className="text-blue-700 dark:text-blue-400 italic mb-6 md:mb-8 text-sm md:text-base">
               Free AI credits to get you going.
@@ -28,233 +29,236 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={onSignIn}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 shadow-lg hover:shadow-xl cursor-pointer"
-              >
-                Try it →
-              </button>
-              <a
-                href="https://github.com/atyourserviceai/app-agent-template"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto bg-black text-white dark:bg-white dark:text-black font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
-              >
-                GitHub
-              </a>
-            </div>
+            <button
+              type="button"
+              onClick={onSignIn}
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+            >
+              Get My Scorecard →
+            </button>
           </div>
         </div>
 
         {/* What You Get Section */}
         <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center">
-            Feature highlights
+            What you get in one quick session
           </h2>
-          <div className="grid md:grid-cols-2 gap-4 md:gap-6 text-gray-700 dark:text-gray-300 text-sm md:text-base">
-            <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Four modes
-                </strong>
-                : Onboarding, Integration, Plan, Act.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Presentation‑first UI
-                </strong>{" "}
-                with floating Chat.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Auth & LLM Gateway
-                </strong>{" "}
-                via AI@YourService (users pay their own usage).
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Export / Import
-                </strong>{" "}
-                endpoints for data portability.
-              </li>
-            </ul>
-            <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Composio integration
-                </strong>{" "}
-                option to connect 3rd‑party apps.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Cloudflare Browser Rendering
-                </strong>{" "}
-                ready for remote scraping/automation.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Reliability & DX
-                </strong>
-                : improved auth/error handling, guarded mounts, readable logs.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Theming
-                </strong>
-                : system default, persistent toggle, DRY component.
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Stack & Architecture */}
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Stack & architecture
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6 text-gray-700 dark:text-gray-300 text-base">
-            <div className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+            <div className="space-y-3 md:space-y-4">
               <div>
                 <h3 className="font-bold text-gray-900 dark:text-white">
-                  Cloudflare Workers + Durable Objects
+                  10-factor reality check
                 </h3>
-                <p>
-                  Stateless request handling with strongly consistent state
-                  where you need it (sessions, chat state, and long-lived
-                  coordination).
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  See exactly which basics you're missing and why they matter.
                 </p>
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 dark:text-white">
-                  Agents SDK
+                  Evidence, not opinions
                 </h3>
-                <p>
-                  Agent lifecycle, tool execution, state sync and scheduling.
-                  Ship multi-mode agents with minimal glue code.
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  We auto-pull backlinks, social stats, and a live landing-page
+                  snapshot while you answer 15 rapid-fire questions.
                 </p>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <div>
                 <h3 className="font-bold text-gray-900 dark:text-white">
-                  AI@YourService
+                  One smart tweak
                 </h3>
-                <p>
-                  OAuth login and LLM Gateway so users pay for their own usage.
-                  Works locally and in staging without changing your app code.
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  A single, smallest-effort change proven to lift your weakest
+                  score.
                 </p>
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 dark:text-white">
-                  Remix (RR7) + React 19
+                  Shareable proof
                 </h3>
-                <p>
-                  Modern routing/data APIs with React 19 UI and Tailwind CSS,
-                  powered by Vite for local dev.
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  Download a polished PDF or post your public link for instant
+                  peer feedback.
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Four modes
+        {/* Checklist Table */}
+        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center">
+            The Checklist We Grade You Against
           </h2>
-          <div className="grid md:grid-cols-4 gap-6 text-center text-gray-700 dark:text-gray-300 text-base">
-            <div>
-              <div className="text-3xl mb-2">🧭</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                1. Onboarding
-              </h3>
-              <p>
-                Define the agent’s purpose, configuration and starting state.
-              </p>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">🧩</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                2. Integration
-              </h3>
-              <p>Connect tools and require confirmation before execution.</p>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">🗺️</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                3. Plan
-              </h3>
-              <p>Analyze and decide without executing any tools.</p>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">⚙️</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                4. Act
-              </h3>
-              <p>
-                Execute approved actions using your own AI billing via the
-                gateway.
-              </p>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-300 dark:border-gray-600">
+                  <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                    #
+                  </th>
+                  <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                    Factor
+                  </th>
+                  <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                    What "5/5" Looks Like
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-700 dark:text-gray-300">
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">1</td>
+                  <td className="py-2 font-medium">Problem Clarity</td>
+                  <td className="py-2">
+                    One-sentence JTBD anyone could repeat
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">2</td>
+                  <td className="py-2 font-medium">Outcome Satisfaction Gap</td>
+                  <td className="py-2">
+                    Users rate pain "important 5 / satisfied &le;2"
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">3</td>
+                  <td className="py-2 font-medium">
+                    Solution Evidence & Value
+                  </td>
+                  <td className="py-2">
+                    Working demo + profitable unit economics
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">4</td>
+                  <td className="py-2 font-medium">Founder–Solution Fit</td>
+                  <td className="py-2">
+                    Deep domain edge & high personal passion
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">5</td>
+                  <td className="py-2 font-medium">Team-Scope & Market Fit</td>
+                  <td className="py-2">
+                    Current team can ship MVP in &le;3 months; market big enough
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">6</td>
+                  <td className="py-2 font-medium">
+                    Competitive Moat (Hamilton's 7 Powers)
+                  </td>
+                  <td className="py-2">At least one power rated &ge;4</td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">7</td>
+                  <td className="py-2 font-medium">Market-Pain Mentions</td>
+                  <td className="py-2">
+                    50+ public posts <em>and</em> 5 direct conversations
+                    confirming pain
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">8</td>
+                  <td className="py-2 font-medium">Early Demand (+Social)</td>
+                  <td className="py-2">
+                    Paid pre-orders or 100+ wait-list with engaged followers
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <td className="py-2">9</td>
+                  <td className="py-2 font-medium">Traffic Authority (SEO)</td>
+                  <td className="py-2">
+                    Domain Rating &gt; 50 or 10k/mo organic visits
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2">10</td>
+                  <td className="py-2 font-medium">Marketing-Product Fit</td>
+                  <td className="py-2">Proven CAC &lt; LTV/3 on real spend</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        {/* Quickstart (from README highlights) */}
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Quickstart
-          </h2>
-          <ol className="list-decimal pl-6 space-y-3 text-gray-700 dark:text-gray-300 text-base max-w-3xl mx-auto">
-            <li>
-              Install dependencies and copy `.dev.vars.example` to `.dev.vars`
-              with your local values.
-            </li>
-            <li>
-              Start the dev server; visit the app and sign in with
-              AI@YourService.
-            </li>
-            <li>
-              Use the floating Chat to interact; switch modes from the header.
-            </li>
-            <li>
-              Export data via the provided endpoints when you want to back up or
-              migrate.
-            </li>
-          </ol>
-          <p className="text-center mt-6">
-            <a
-              href="https://github.com/atyourserviceai/app-agent-template"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-blue-700 dark:text-blue-400"
-            >
-              Read the full README →
-            </a>
+          <p className="text-center mt-4 font-medium text-gray-900 dark:text-white">
+            Your overall <strong>Readiness %</strong> dial is the average of
+            these ten scores.
           </p>
         </div>
 
+        {/* How It Works */}
+        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            How it works
+          </h2>
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="text-3xl mb-2">💬</div>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
+                1. Chat.
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
+                Describe your idea—no rigid forms.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-2">🔍</div>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
+                2. Enrich.
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
+                We fetch SEO & social signals while you type.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-2">📊</div>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
+                3. Grade.
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
+                Instant color-coded grid + Readiness % dial.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-2">🚀</div>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
+                4. Act & Share.
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
+                Apply your tweak, invite peers to verify, or post your scorecard
+                badge online.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Zero-risk Pricing */}
+        <div className="bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-xl p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 text-center">
+            Zero-risk pricing
+          </h2>
+          <p className="text-center text-gray-700 dark:text-gray-300 mb-6">
+            Unlimited ideas • Free starter credits • Pay only for extra AI
+            usage—
+            <br />
+            or plug in your own OpenAI key for <strong>$0</strong> platform fee.
+          </p>
+        </div>
+
+        {/* Final CTA */}
         <div className="text-center">
           <p className="text-xl font-medium text-gray-900 dark:text-white mb-6">
-            Build faster with a production-ready agent foundation.
+            Stop guessing. Know before you build.
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={onSignIn}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
-            >
-              Try it →
-            </button>
-            <a
-              href="https://github.com/atyourserviceai/app-agent-template"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-black text-white dark:bg-white dark:text-black font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
-            >
-              GitHub
-            </a>
-          </div>
+          <button
+            type="button"
+            onClick={onSignIn}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+          >
+            Start Assessment →
+          </button>
         </div>
       </div>
     </div>
