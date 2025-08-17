@@ -12,7 +12,6 @@ export function IdeaSwitcher({ agentState, onIdeaChange }: IdeaSwitcherProps) {
   const currentIdea = agentState.currentIdea;
   const currentIdeaId = currentIdea?.idea_id || "new";
 
-
   const getCompletionPercentage = (idea: Idea): number => {
     const factors = Object.values(idea.checklist || {});
     const scored = factors.filter(
@@ -23,7 +22,8 @@ export function IdeaSwitcher({ agentState, onIdeaChange }: IdeaSwitcherProps) {
 
   return (
     <Card className="p-3 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-      <div className="flex items-center justify-between">
+      {/* Desktop: side-by-side layout */}
+      <div className="hidden md:flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
             Current Idea {ideas.length > 0 && `(${ideas.length} total)`}
@@ -43,6 +43,29 @@ export function IdeaSwitcher({ agentState, onIdeaChange }: IdeaSwitcherProps) {
             <option value="new">+ New Idea</option>
           </select>
         </div>
+      </div>
+
+      {/* Mobile: stacked layout */}
+      <div className="md:hidden space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            Current Idea {ideas.length > 0 && `(${ideas.length} total)`}
+          </span>
+        </div>
+        <select
+          value={currentIdeaId}
+          onChange={(e) => onIdeaChange(e.target.value)}
+          className="w-full text-sm border border-blue-300 dark:border-blue-600 rounded px-2 py-1 bg-white dark:bg-neutral-800 text-blue-900 dark:text-blue-100"
+        >
+          {ideas.map((idea) => (
+            <option key={idea.idea_id} value={idea.idea_id}>
+              {(idea.title || "Untitled Idea").length > 30
+                ? `${(idea.title || "Untitled Idea").substring(0, 30)}...`
+                : idea.title || "Untitled Idea"}
+            </option>
+          ))}
+          <option value="new">+ New Idea</option>
+        </select>
       </div>
 
       {/* Current idea summary */}
