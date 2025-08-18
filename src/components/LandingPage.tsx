@@ -286,6 +286,33 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
           </div>
         </div>
 
+        {/* GPT Trial Option */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 md:p-8 mb-8 border border-blue-200 dark:border-blue-500/30 shadow-lg">
+          <div className="text-center">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              🤖 Want to try it first? Use our Free ChatGPT version
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+              Get a quick idea assessment without signing up for anything new.
+              Perfect for a first taste of our 10-factor framework, though you
+              won't get saved scores or visual dashboards.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <a
+                href="https://chatgpt.com/g/g-68a2b6692fa881918b08d76f92e6d7c4-idea-potential-pre-revenue-idea-grader"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+              >
+                Try ChatGPT Version →
+              </a>
+              <span className="text-gray-500 dark:text-gray-400 text-sm">
+                or get the full experience below ↓
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Zero-risk Pricing */}
         <div className="bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-xl p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 text-center">
