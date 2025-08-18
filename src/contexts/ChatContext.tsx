@@ -3,6 +3,8 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 interface ChatContextType {
   activeTab: "chat" | "presentation";
   setActiveTab: (tab: "chat" | "presentation") => void;
+  messageCount: number;
+  setMessageCount: (count: number) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -11,9 +13,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
     "presentation"
   );
+  const [messageCount, setMessageCount] = useState(0);
 
   return (
-    <ChatContext.Provider value={{ activeTab, setActiveTab }}>
+    <ChatContext.Provider
+      value={{ activeTab, setActiveTab, messageCount, setMessageCount }}
+    >
       {children}
     </ChatContext.Provider>
   );

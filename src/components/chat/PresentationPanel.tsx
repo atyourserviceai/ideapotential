@@ -21,6 +21,7 @@ interface PresentationPanelProps {
   agentMode: AgentMode;
   showDebug: boolean;
   chatIsOpen?: boolean;
+  messageCount?: number;
 }
 
 declare global {
@@ -33,6 +34,7 @@ export function PresentationPanel({
   agentState,
   showDebug,
   chatIsOpen = false,
+  messageCount = 0,
 }: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const agentSettingsId = useId();
@@ -193,7 +195,7 @@ export function PresentationPanel({
                   </div>
                 )}
                 {(() => {
-                  return !hasAssessment ? (
+                  return !hasAssessment && messageCount === 0 ? (
                     <div className="mt-3">
                       <button
                         type="button"

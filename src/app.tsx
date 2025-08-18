@@ -454,6 +454,12 @@ function Chat() {
   // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
 
+  // Update message count in chat context for other components to use
+  const { setMessageCount } = useChatContext();
+  useEffect(() => {
+    setMessageCount(agentMessages.length);
+  }, [agentMessages.length, setMessageCount]);
+
   // Use the message editing hook to manage message editing and retry logic
   const {
     editingMessageId,
@@ -1093,6 +1099,7 @@ function AppContent() {
 // Background presentation panel that shows with or without agent state
 function BackgroundPresentationPanel({ chatIsOpen }: { chatIsOpen: boolean }) {
   const auth = useAuth();
+  const { messageCount } = useChatContext();
 
   // If not authenticated, show presentation panel without agent state
   if (!auth?.authMethod) {
@@ -1104,19 +1111,27 @@ function BackgroundPresentationPanel({ chatIsOpen }: { chatIsOpen: boolean }) {
         showDebug={false}
         variant="full"
         chatIsOpen={chatIsOpen}
+        messageCount={messageCount}
       />
     );
   }
 
   // If authenticated, show presentation panel with agent state
-  return <AuthenticatedPresentationPanel chatIsOpen={chatIsOpen} />;
+  return (
+    <AuthenticatedPresentationPanel
+      chatIsOpen={chatIsOpen}
+      messageCount={messageCount}
+    />
+  );
 }
 
 // Component that renders the presentation panel with agent state when authenticated
 function AuthenticatedPresentationPanel({
   chatIsOpen,
+  messageCount,
 }: {
   chatIsOpen: boolean;
+  messageCount: number;
 }) {
   // Get authenticated agent configuration
   const agentConfig = useAgentAuth();
@@ -1132,6 +1147,7 @@ function AuthenticatedPresentationPanel({
       showDebug={false}
       variant="full"
       chatIsOpen={chatIsOpen}
+      messageCount={messageCount}
     />
   );
 }
