@@ -201,7 +201,7 @@ export function useAgentState(
   return {
     agent,
     agentConfig,
-    agentMode,
+    agentMode: "act", // Hardcoded to always return "act" mode
     agentState,
     changeAgentConfig,
     changeAgentMode,

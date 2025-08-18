@@ -1137,7 +1137,7 @@ function AuthenticatedPresentationPanel({
   const agentConfig = useAgentAuth();
 
   // Use the agent state hook
-  const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
+  const { agentState, agentMode } = useAgentState(agentConfig, "act");
 
   return (
     <PresentationContainer

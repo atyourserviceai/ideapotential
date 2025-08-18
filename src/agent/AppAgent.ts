@@ -442,13 +442,19 @@ export class AppAgent extends AIChatAgent<Env> {
     // Mode-specific tools
     switch (mode) {
       case "onboarding":
-        // Onboarding mode - enable configuration tools
+        // Onboarding mode - enable configuration tools and assessment tools
         return {
           ...baseTools,
           checkExistingConfig: tools.checkExistingConfig,
           completeOnboarding: tools.completeOnboarding,
           getOnboardingStatus: tools.getOnboardingStatus,
           saveSettings: tools.saveSettings,
+          // Assessment tools for idea validation (also available during onboarding)
+          getAssessmentState: tools.getAssessmentState,
+          storeIdeaInformation: tools.storeIdeaInformation,
+          storeConversationInsights: tools.storeConversationInsights,
+          updateFactorScore: tools.updateFactorScore,
+          selectIdea: tools.selectIdea,
         } as ToolSet;
 
       case "integration":
