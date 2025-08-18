@@ -90,102 +90,154 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
         {/* Checklist Table */}
         <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center">
-            The Checklist We Grade You Against
+            The 10-Factor Assessment Framework
           </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-300 dark:border-gray-600">
-                  <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
-                    #
-                  </th>
-                  <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
-                    Factor
-                  </th>
-                  <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
-                    What "5/5" Looks Like
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-700 dark:text-gray-300">
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">1</td>
-                  <td className="py-2 font-medium">Problem Clarity</td>
-                  <td className="py-2">
-                    One-sentence JTBD anyone could repeat
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">2</td>
-                  <td className="py-2 font-medium">Outcome Satisfaction Gap</td>
-                  <td className="py-2">
-                    Users rate pain "important 5 / satisfied &le;2"
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">3</td>
-                  <td className="py-2 font-medium">
-                    Solution Evidence & Value
-                  </td>
-                  <td className="py-2">
-                    Working demo + profitable unit economics
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">4</td>
-                  <td className="py-2 font-medium">Founder–Solution Fit</td>
-                  <td className="py-2">
-                    Deep domain edge & high personal passion
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">5</td>
-                  <td className="py-2 font-medium">Team-Scope & Market Fit</td>
-                  <td className="py-2">
-                    Current team can ship MVP in &le;3 months; market big enough
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">6</td>
-                  <td className="py-2 font-medium">
-                    Competitive Moat (Hamilton's 7 Powers)
-                  </td>
-                  <td className="py-2">At least one power rated &ge;4</td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">7</td>
-                  <td className="py-2 font-medium">Market-Pain Mentions</td>
-                  <td className="py-2">
-                    50+ public posts <em>and</em> 5 direct conversations
-                    confirming pain
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">8</td>
-                  <td className="py-2 font-medium">Early Demand (+Social)</td>
-                  <td className="py-2">
-                    Paid pre-orders or 100+ wait-list with engaged followers
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <td className="py-2">9</td>
-                  <td className="py-2 font-medium">Traffic Authority (SEO)</td>
-                  <td className="py-2">
-                    Domain Rating &gt; 50 or 10k/mo organic visits
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-2">10</td>
-                  <td className="py-2 font-medium">Marketing-Product Fit</td>
-                  <td className="py-2">Proven CAC &lt; LTV/3 on real spend</td>
-                </tr>
-              </tbody>
-            </table>
+
+          {/* Potential Factors */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-3">
+              POTENTIAL (7 factors) — fundamentals that determine upside
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-300 dark:border-gray-600">
+                    <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                      #
+                    </th>
+                    <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                      Factor
+                    </th>
+                    <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                      What "5/5" Looks Like
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700 dark:text-gray-300">
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">1</td>
+                    <td className="py-2 font-medium">Problem Clarity</td>
+                    <td className="py-2">
+                      One-sentence JTBD anyone could repeat
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">2</td>
+                    <td className="py-2 font-medium">Market-Pain Mentions</td>
+                    <td className="py-2">
+                      50+ public posts <em>and</em> 5 direct conversations
+                      confirming pain
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">3</td>
+                    <td className="py-2 font-medium">
+                      Outcome Satisfaction Gap
+                    </td>
+                    <td className="py-2">
+                      Users rate pain "importance 5 / satisfaction ≤2"
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">4</td>
+                    <td className="py-2 font-medium">
+                      Competitive Moat (Hamilton's 7 Powers)
+                    </td>
+                    <td className="py-2">At least one power rated ≥4</td>
+                  </tr>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">5</td>
+                    <td className="py-2 font-medium">Team–Solution Fit</td>
+                    <td className="py-2">
+                      Deep domain edge & high personal passion
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">6</td>
+                    <td className="py-2 font-medium">
+                      Solution Evidence & Value
+                    </td>
+                    <td className="py-2">
+                      Working demo + profitable unit economics
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">7</td>
+                    <td className="py-2 font-medium">Team–Market Fit</td>
+                    <td className="py-2">
+                      Market size can support the necessary team size
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <p className="text-center mt-4 font-medium text-gray-900 dark:text-white">
-            Your overall <strong>Readiness %</strong> dial is the average of
-            these ten scores.
-          </p>
+
+          {/* Actualization Factors */}
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-green-600 dark:text-green-400 mb-3">
+              ACTUALIZATION (3 factors) — evidence you're capturing that upside
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-300 dark:border-gray-600">
+                    <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                      #
+                    </th>
+                    <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                      Factor
+                    </th>
+                    <th className="text-left py-2 font-bold text-gray-900 dark:text-white">
+                      What "5/5" Looks Like
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700 dark:text-gray-300">
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">8</td>
+                    <td className="py-2 font-medium">Early Demand (+Social)</td>
+                    <td className="py-2">
+                      Paid pre-orders or 100+ wait-list with engaged followers
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-2">9</td>
+                    <td className="py-2 font-medium">
+                      Traffic Authority (SEO / RAO)
+                    </td>
+                    <td className="py-2">
+                      DR &gt; 50 or 10k/mo organic or surfaced in top-3 RAG
+                      answers
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2">10</td>
+                    <td className="py-2 font-medium">Marketing-Product Fit</td>
+                    <td className="py-2">
+                      Proven CAC &lt; LTV/3 on real spend
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="text-center mt-6 space-y-2">
+            <p className="font-medium text-gray-900 dark:text-white">
+              <strong>Potential Score</strong> = (Σ of 7 potential factors ÷ 35)
+              × 100
+            </p>
+            <p className="font-medium text-gray-900 dark:text-white">
+              <strong>Actualization Score</strong> = (Σ of 3 actualization
+              factors ÷ 15) × 100
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+              You get <strong>dual scoring dials</strong> showing both your
+              idea's fundamental potential and your current progress in
+              capturing that potential.
+            </p>
+          </div>
         </div>
 
         {/* How It Works */}
