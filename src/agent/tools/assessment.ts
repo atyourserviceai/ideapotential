@@ -170,7 +170,6 @@ export const storeIdeaInformation = tool({
         ideas: updatedIdeas,
       };
 
-
       await agent.setState(updatedState);
 
       return {
@@ -642,19 +641,16 @@ export const selectIdea = tool({
 });
 
 /**
- * Delete an idea and optionally clear chat history
+ * Delete an idea permanently from the user's collection
  */
 export const deleteIdea = tool({
-  description:
-    "Delete an idea permanently from the user's collection, with option to clear chat history",
+  description: "Delete an idea permanently from the user's collection",
   execute: async ({
     ideaId,
     confirmDelete,
-    clearChatHistory = false,
   }: {
     ideaId?: string;
     confirmDelete: boolean;
-    clearChatHistory?: boolean;
   }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -726,10 +722,8 @@ export const deleteIdea = tool({
           " You have no ideas remaining. Feel free to start assessing a new idea!";
       }
 
-      if (clearChatHistory) {
-        responseMessage +=
-          " If you'd like to start fresh, you can clear the chat history by clicking the trash can icon at the top of the chat panel.";
-      }
+      responseMessage +=
+        " If you'd like to start fresh, you can clear the chat history by clicking the trash can icon at the top of the chat panel.";
 
       return {
         success: true,
@@ -757,10 +751,5 @@ export const deleteIdea = tool({
       .describe(
         "Must be true to confirm deletion - prevents accidental deletion"
       ),
-    clearChatHistory: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe("Whether to also clear the chat history after deletion"),
   }),
 });

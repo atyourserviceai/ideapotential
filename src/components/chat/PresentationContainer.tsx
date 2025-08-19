@@ -71,7 +71,6 @@ export function PresentationContainer({
             agentMode={agentMode}
             showDebug={showDebug}
             chatIsOpen={chatIsOpen}
-            messageCount={messageCount}
           />
         </div>
       </div>
