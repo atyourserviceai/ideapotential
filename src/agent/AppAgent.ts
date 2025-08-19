@@ -455,6 +455,7 @@ export class AppAgent extends AIChatAgent<Env> {
           storeConversationInsights: tools.storeConversationInsights,
           updateFactorScore: tools.updateFactorScore,
           selectIdea: tools.selectIdea,
+          deleteIdea: tools.deleteIdea,
         } as ToolSet;
 
       case "integration":
@@ -477,6 +478,8 @@ export class AppAgent extends AIChatAgent<Env> {
           storeIdeaInformation: tools.storeIdeaInformation,
           storeConversationInsights: tools.storeConversationInsights,
           updateFactorScore: tools.updateFactorScore,
+          selectIdea: tools.selectIdea,
+          deleteIdea: tools.deleteIdea,
           testErrorTool: tools.testErrorTool,
         } as ToolSet;
 

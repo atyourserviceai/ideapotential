@@ -155,6 +155,7 @@ export const tools = {
   storeConversationInsights: assessmentTools.storeConversationInsights,
   updateFactorScore: assessmentTools.updateFactorScore,
   selectIdea: assessmentTools.selectIdea,
+  deleteIdea: assessmentTools.deleteIdea,
 
   // State access tools
   getAgentState: stateTools.getAgentState,

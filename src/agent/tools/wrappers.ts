@@ -83,7 +83,7 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
             `[Tool Validation Error] ${tool.description || "unnamed tool"} parameter validation failed:`,
             validationError
           );
-          
+
           // Create a user-friendly error message for common validation issues
           let errorMessage = "Invalid parameters provided to tool";
           if (validationError instanceof Error) {
@@ -97,10 +97,13 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
               errorMessage = validationError.message;
             }
           }
-          
+
           return {
             error: {
-              details: validationError instanceof Error ? validationError.message : undefined,
+              details:
+                validationError instanceof Error
+                  ? validationError.message
+                  : undefined,
               message: errorMessage,
               timestamp: new Date().toISOString(),
             },

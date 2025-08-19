@@ -148,13 +148,28 @@ export const storeIdeaInformation = tool({
       }
 
       // Update agent state
+      const existingIdeas = currentState.ideas || [];
+      const existingIdeaIndex = existingIdeas.findIndex(
+        (i) => i.idea_id === updatedIdea.idea_id
+      );
+
+      let updatedIdeas;
+      if (existingIdeaIndex >= 0) {
+        // Update existing idea
+        updatedIdeas = existingIdeas.map((i) =>
+          i.idea_id === updatedIdea.idea_id ? updatedIdea : i
+        );
+      } else {
+        // Add new idea
+        updatedIdeas = [...existingIdeas, updatedIdea];
+      }
+
       const updatedState: AppAgentState = {
         ...currentState,
         currentIdea: updatedIdea,
-        ideas: currentState.ideas?.map((i) =>
-          i.idea_id === updatedIdea.idea_id ? updatedIdea : i
-        ) || [updatedIdea],
+        ideas: updatedIdeas,
       };
+
 
       await agent.setState(updatedState);
 
@@ -251,12 +266,15 @@ export const storeConversationInsights = tool({
         updated_at: now,
       };
 
+      const existingIdeas = currentState.ideas || [];
+      const updatedIdeas = existingIdeas.map((i) =>
+        i.idea_id === updatedIdea.idea_id ? updatedIdea : i
+      );
+
       const updatedState: AppAgentState = {
         ...currentState,
         currentIdea: updatedIdea,
-        ideas: currentState.ideas?.map((i) =>
-          i.idea_id === updatedIdea.idea_id ? updatedIdea : i
-        ) || [updatedIdea],
+        ideas: updatedIdeas,
       };
 
       await agent.setState(updatedState);
@@ -408,12 +426,15 @@ export const updateFactorScore = tool({
       };
 
       // Update agent state
+      const existingIdeas = currentState.ideas || [];
+      const updatedIdeas = existingIdeas.map((i) =>
+        i.idea_id === idea.idea_id ? updatedIdea : i
+      );
+
       const updatedState: AppAgentState = {
         ...currentState,
         currentIdea: updatedIdea,
-        ideas: currentState.ideas?.map((i) =>
-          i.idea_id === idea.idea_id ? updatedIdea : i
-        ) || [updatedIdea],
+        ideas: updatedIdeas,
         assessmentProgress: updatedProgress,
       };
 
@@ -618,4 +639,128 @@ export const selectIdea = tool({
       return `Error selecting idea: ${error instanceof Error ? error.message : "Unknown error"}`;
     }
   },
+});
+
+/**
+ * Delete an idea and optionally clear chat history
+ */
+export const deleteIdea = tool({
+  description:
+    "Delete an idea permanently from the user's collection, with option to clear chat history",
+  execute: async ({
+    ideaId,
+    confirmDelete,
+    clearChatHistory = false,
+  }: {
+    ideaId?: string;
+    confirmDelete: boolean;
+    clearChatHistory?: boolean;
+  }) => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    if (!confirmDelete) {
+      return "Deletion cancelled. Please confirm deletion by setting confirmDelete to true.";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+
+      // Determine which idea to delete
+      let targetIdea: Idea | undefined;
+      if (ideaId) {
+        targetIdea = currentState.ideas?.find((i) => i.idea_id === ideaId);
+      } else {
+        targetIdea = currentState.currentIdea || undefined;
+      }
+
+      if (!targetIdea) {
+        const availableIdeas =
+          currentState.ideas
+            ?.map((i) => `"${i.title}" (${i.idea_id})`)
+            .join(", ") || "none";
+        return `Idea not found. Available ideas: ${availableIdeas}`;
+      }
+
+      // Remove idea from ideas array
+      const updatedIdeas =
+        currentState.ideas?.filter((i) => i.idea_id !== targetIdea!.idea_id) ||
+        [];
+
+      // Clear current idea if it's the one being deleted
+      const updatedCurrentIdea =
+        currentState.currentIdea?.idea_id === targetIdea.idea_id
+          ? null
+          : currentState.currentIdea;
+
+      // Reset assessment progress if current idea was deleted
+      const updatedProgress =
+        currentState.currentIdea?.idea_id === targetIdea.idea_id
+          ? {
+              currentStep: 0,
+              totalSteps: 10,
+              completedFactors: [],
+              isAssessmentComplete: false,
+            }
+          : currentState.assessmentProgress;
+
+      const newState: AppAgentState = {
+        ...currentState,
+        ideas: updatedIdeas,
+        currentIdea: updatedCurrentIdea,
+        assessmentProgress: updatedProgress,
+      };
+
+      await agent.setState(newState);
+
+      let responseMessage = `Successfully deleted idea "${targetIdea.title}".`;
+
+      const remainingCount = updatedIdeas.length;
+      if (remainingCount > 0) {
+        responseMessage += ` You have ${remainingCount} idea${remainingCount === 1 ? "" : "s"} remaining.`;
+      } else {
+        responseMessage +=
+          " You have no ideas remaining. Feel free to start assessing a new idea!";
+      }
+
+      if (clearChatHistory) {
+        responseMessage +=
+          " If you'd like to start fresh, you can clear the chat history by clicking the trash can icon at the top of the chat panel.";
+      }
+
+      return {
+        success: true,
+        message: responseMessage,
+        deletedIdea: {
+          id: targetIdea.idea_id,
+          title: targetIdea.title,
+        },
+        remainingIdeas: remainingCount,
+      };
+    } catch (error) {
+      console.error("Error deleting idea:", error);
+      return `Error deleting idea: ${error instanceof Error ? error.message : "Unknown error"}`;
+    }
+  },
+  parameters: z.object({
+    ideaId: z
+      .string()
+      .optional()
+      .describe(
+        "ID of the idea to delete (if not provided, deletes current idea)"
+      ),
+    confirmDelete: z
+      .boolean()
+      .describe(
+        "Must be true to confirm deletion - prevents accidental deletion"
+      ),
+    clearChatHistory: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe("Whether to also clear the chat history after deletion"),
+  }),
 });
