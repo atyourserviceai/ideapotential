@@ -73,11 +73,15 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
     params: TParams,
     options?: { signal?: AbortSignal }
   ) => {
+    console.log(`[Tool Wrapper] Executing tool: ${tool.description || "unnamed"} with params:`, params);
+    
     try {
       // First validate parameters using the tool's schema to catch validation errors
       if (tool.parameters && params) {
+        console.log(`[Tool Wrapper] Validating parameters for ${tool.description || "unnamed tool"}`);
         try {
-          tool.parameters.parse(params);
+          const validatedParams = tool.parameters.parse(params);
+          console.log(`[Tool Wrapper] Parameter validation passed for ${tool.description || "unnamed tool"}`);
         } catch (validationError) {
           console.error(
             `[Tool Validation Error] ${tool.description || "unnamed tool"} parameter validation failed:`,
@@ -98,6 +102,7 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
             }
           }
 
+          console.log(`[Tool Wrapper] Returning validation error as tool result for ${tool.description || "unnamed tool"}`);
           return {
             error: {
               details:
