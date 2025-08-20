@@ -313,6 +313,7 @@ export const storeConversationInsights = tool({
         "early_demand",
         "traffic_authority",
         "marketing_product_fit",
+        "other",
       ])
       .optional()
       .describe("Which assessment factor this relates to"),

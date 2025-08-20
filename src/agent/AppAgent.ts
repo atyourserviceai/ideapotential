@@ -111,7 +111,8 @@ export type ChecklistKey =
   | "team_market_fit"
   | "early_demand"
   | "traffic_authority"
-  | "marketing_product_fit";
+  | "marketing_product_fit"
+  | "other";
 
 export interface Evidence {
   evidence_id: string;
