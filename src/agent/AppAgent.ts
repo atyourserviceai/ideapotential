@@ -570,8 +570,13 @@ export class AppAgent extends AIChatAgent<Env> {
                 // Handle tool validation errors specifically
                 if (error && typeof error === "object" && "message" in error) {
                   const errorMessage = String(error.message);
-                  if (errorMessage.includes("Invalid arguments for tool") && errorMessage.includes("Type validation failed")) {
-                    console.log("[AppAgent] Tool validation error detected, converting to non-fatal error");
+                  if (
+                    errorMessage.includes("Invalid arguments for tool") &&
+                    errorMessage.includes("Type validation failed")
+                  ) {
+                    console.log(
+                      "[AppAgent] Tool validation error detected, converting to non-fatal error"
+                    );
                     // Don't throw - let the stream continue and handle this as a tool error
                     return;
                   }
@@ -618,8 +623,13 @@ export class AppAgent extends AIChatAgent<Env> {
             // Handle tool validation errors specifically
             if (error && typeof error === "object" && "message" in error) {
               const errorMessage = String(error.message);
-              if (errorMessage.includes("Invalid arguments for tool") && errorMessage.includes("Type validation failed")) {
-                console.log("[AppAgent] Tool validation error caught in outer try-catch, treating as non-fatal");
+              if (
+                errorMessage.includes("Invalid arguments for tool") &&
+                errorMessage.includes("Type validation failed")
+              ) {
+                console.log(
+                  "[AppAgent] Tool validation error caught in outer try-catch, treating as non-fatal"
+                );
                 // For now, just log and continue - in the future we could inject an error message
                 break; // Exit retry loop without throwing
               }
