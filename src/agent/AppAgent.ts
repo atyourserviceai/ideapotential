@@ -171,6 +171,7 @@ export interface ConversationInsight {
     | "user_behavior"
     | "pain_point"
     | "solution_feedback"
+    | "early_demand"
     | "other";
   content: string;
   factor_related?: ChecklistKey;
