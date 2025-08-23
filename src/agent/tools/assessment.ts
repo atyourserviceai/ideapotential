@@ -213,24 +213,22 @@ export const storeIdeaInformation = tool({
  */
 export const storeConversationInsights = tool({
   description:
-    "Store important insights, quotes, or context from the conversation",
-  execute: async ({
-    insight_type,
-    content,
-    factor_related,
-    confidence_level,
-  }: {
-    insight_type:
-      | "user_quote"
-      | "market_insight"
-      | "competitive_intel"
-      | "user_behavior"
-      | "pain_point"
-      | "solution_feedback"
-      | "other";
-    content: string;
-    factor_related?: ChecklistKey;
-    confidence_level?: number;
+    "Store important insights, quotes, or context from the conversation. Provide an array of insights (or single insight in array).",
+  execute: async ({ insights }: {
+    insights: Array<{
+      insight_type:
+        | "user_quote"
+        | "market_insight"
+        | "competitive_intel"
+        | "user_behavior"
+        | "pain_point"
+        | "solution_feedback"
+        | "early_demand"
+        | "other";
+      content: string;
+      factor_related?: ChecklistKey;
+      confidence_level?: number;
+    }>;
   }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -246,21 +244,23 @@ export const storeConversationInsights = tool({
       }
 
       const now = new Date().toISOString();
-      const insight = {
+
+      // Create insight objects
+      const processedInsights = insights.map(insight => ({
         id: generateId(),
-        type: insight_type,
-        content,
-        factor_related,
-        confidence_level,
+        type: insight.insight_type,
+        content: insight.content,
+        factor_related: insight.factor_related,
+        confidence_level: insight.confidence_level,
         timestamp: now,
-      };
+      }));
 
       // Store in conversation_insights array on the idea
       const updatedIdea = {
         ...currentState.currentIdea,
         conversation_insights: [
           ...(currentState.currentIdea.conversation_insights || []),
-          insight,
+          ...processedInsights,
         ],
         updated_at: now,
       };
@@ -278,10 +278,16 @@ export const storeConversationInsights = tool({
 
       await agent.setState(updatedState);
 
+      const count = processedInsights.length;
+      const summary = count === 1 
+        ? `${processedInsights[0].type}: ${processedInsights[0].content.substring(0, 50)}...`
+        : `${count} insights (${processedInsights.map(i => i.type).join(', ')})`;
+
       return {
         success: true,
-        message: `Stored ${insight_type}: ${content.substring(0, 50)}...`,
-        insight_id: insight.id,
+        message: `Stored ${summary}`,
+        insights_stored: count,
+        insight_ids: processedInsights.map(i => i.id),
       };
     } catch (error) {
       console.error("Error storing conversation insight:", error);
@@ -289,76 +295,53 @@ export const storeConversationInsights = tool({
     }
   },
   parameters: z.object({
-    insight_type: z
-      .enum([
-        "user_quote",
-        "market_insight",
-        "competitive_intel",
-        "user_behavior",
-        "pain_point",
-        "solution_feedback",
-        "other",
-      ])
-      .describe("Type of insight being stored"),
-    content: z.string().describe("The insight content or quote"),
-    factor_related: z
-      .enum([
-        "problem_clarity",
-        "market_pain_mentions",
-        "outcome_gap",
-        "competitive_moat",
-        "team_solution_fit",
-        "solution_evidence",
-        "team_market_fit",
-        "early_demand",
-        "traffic_authority",
-        "marketing_product_fit",
-        "other",
-      ])
-      .optional()
-      .describe("Which assessment factor this relates to"),
-    confidence_level: z
-      .number()
-      .min(0)
-      .max(1)
-      .optional()
-      .describe("Confidence in this insight (0-1)"),
+    insights: z.array(z.object({
+      insight_type: z
+        .enum([
+          "user_quote",
+          "market_insight",
+          "competitive_intel",
+          "user_behavior",
+          "pain_point",
+          "solution_feedback",
+          "early_demand",
+          "other",
+        ])
+        .describe("Type of insight being stored"),
+      content: z.string().describe("The insight content or quote"),
+      factor_related: z
+        .enum([
+          "problem_clarity",
+          "market_pain_mentions",
+          "outcome_gap",
+          "competitive_moat",
+          "team_solution_fit",
+          "solution_evidence",
+          "team_market_fit",
+          "early_demand",
+          "traffic_authority",
+          "marketing_product_fit",
+          "other",
+        ])
+        .optional()
+        .describe("Which assessment factor this relates to"),
+      confidence_level: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe("Confidence in this insight (0-1)"),
+    })).describe("Array of insights to store"),
   }),
 });
 
 /**
- * Update a factor score and add evidence based on conversation
+ * Update factor scores and add evidence based on conversation
  */
 export const updateFactorScore = tool({
   description:
-    "Update a specific factor score and add supporting evidence based on conversation",
-  execute: async (args) => {
-    const {
-      factor,
-      score,
-      reasoning,
-      evidence_type,
-      evidence_value,
-      evidence_source,
-      evidence_notes,
-      confidence,
-    } = args as {
-      factor: ChecklistKey;
-      score: number;
-      reasoning: string;
-      evidence_type:
-        | "conversation"
-        | "user_statement"
-        | "market_research"
-        | "competitive_analysis"
-        | "demo_feedback"
-        | "metrics"
-        | "other";
-      evidence_value: unknown;
-      evidence_source?: string;
-      evidence_notes?: string;
-      confidence?: number;
-    };
+    "Update factor scores and add supporting evidence based on conversation. Provide an array of factor updates (or single factor update in array).",
+  execute: async ({ factor_updates }: any) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
     if (!agent) {
@@ -375,32 +358,47 @@ export const updateFactorScore = tool({
       const idea = currentState.currentIdea;
       const now = new Date().toISOString();
 
-      // Create new evidence entry
-      const newEvidence: Evidence = {
-        evidence_id: generateId(),
-        type: evidence_type,
-        source: evidence_source || "conversation",
-        value: evidence_value,
-        confidence,
-        notes: evidence_notes,
-        reasoning, // Add reasoning field
-        timestamp: now,
-        added_by: "agent",
-      };
+      // Process all updates
+      let updatedChecklist = { ...idea.checklist };
+      const processedUpdates: any[] = [];
 
-      // Update the factor
-      const updatedChecklist = {
-        ...idea.checklist,
-        [factor]: {
-          score: Math.max(0, Math.min(5, score)), // Ensure score is 0-5
-          evidence_strength: calculateEvidenceStrength([
-            ...idea.checklist[factor].evidence,
-            newEvidence,
-          ]),
-          evidence: [...idea.checklist[factor].evidence, newEvidence],
-          last_scored_at: now,
-        },
-      };
+      for (const update of factor_updates) {
+        const factorKey = update.factor as ChecklistKey;
+        
+        // Create new evidence entry
+        const newEvidence: Evidence = {
+          evidence_id: generateId(),
+          type: update.evidence_type,
+          source: update.evidence_source || "conversation",
+          value: update.evidence_value,
+          confidence: update.confidence,
+          notes: update.evidence_notes,
+          reasoning: update.reasoning,
+          timestamp: now,
+          added_by: "agent",
+        };
+
+        // Update the factor
+        updatedChecklist = {
+          ...updatedChecklist,
+          [factorKey]: {
+            score: Math.max(0, Math.min(5, update.score)), // Ensure score is 0-5
+            evidence_strength: calculateEvidenceStrength([
+              ...updatedChecklist[factorKey].evidence,
+              newEvidence,
+            ]),
+            evidence: [...updatedChecklist[factorKey].evidence, newEvidence],
+            last_scored_at: now,
+          },
+        };
+
+        processedUpdates.push({
+          factor: factorKey,
+          score: update.score,
+          reasoning: update.reasoning,
+          evidence_strength: updatedChecklist[factorKey].evidence_strength,
+        });
+      }
 
       // Recalculate derived scores
       const derivedScores = calculateDerivedScores(updatedChecklist);
@@ -440,12 +438,16 @@ export const updateFactorScore = tool({
 
       await agent.setState(updatedState);
 
+      const count = processedUpdates.length;
+      const summary = count === 1 
+        ? `${processedUpdates[0].factor} score to ${processedUpdates[0].score}/5 - ${processedUpdates[0].reasoning}`
+        : `${count} factors (${processedUpdates.map(u => `${u.factor}: ${u.score}/5`).join(', ')})`;
+
       return {
         success: true,
-        message: `Updated ${factor} score to ${score}/5 - ${reasoning}`,
-        factor,
-        score,
-        evidence_strength: updatedChecklist[factor].evidence_strength,
+        message: `Updated ${summary}`,
+        factors_updated: count,
+        updates: processedUpdates,
         derived_scores: derivedScores,
         progress: updatedProgress,
       };
@@ -455,47 +457,49 @@ export const updateFactorScore = tool({
     }
   },
   parameters: z.object({
-    factor: z
-      .enum([
-        "problem_clarity",
-        "market_pain_mentions",
-        "outcome_gap",
-        "competitive_moat",
-        "team_solution_fit",
-        "solution_evidence",
-        "team_market_fit",
-        "early_demand",
-        "traffic_authority",
-        "marketing_product_fit",
-      ])
-      .describe("The factor to update"),
-    score: z.number().min(0).max(5).describe("The score (0-5) for this factor"),
-    reasoning: z.string().describe("Explanation of why this score was given"),
-    evidence_type: z
-      .enum([
-        "conversation",
-        "user_statement",
-        "market_research",
-        "competitive_analysis",
-        "demo_feedback",
-        "metrics",
-        "other",
-      ])
-      .describe("Type of evidence supporting this score"),
-    evidence_value: z
-      .any()
-      .describe("The evidence data/value from the conversation"),
-    evidence_source: z.string().optional().describe("Source of the evidence"),
-    evidence_notes: z
-      .string()
-      .optional()
-      .describe("Additional notes about the evidence"),
-    confidence: z
-      .number()
-      .min(0)
-      .max(1)
-      .optional()
-      .describe("Confidence level in the evidence (0-1)"),
+    factor_updates: z.array(z.object({
+      factor: z
+        .enum([
+          "problem_clarity",
+          "market_pain_mentions",
+          "outcome_gap",
+          "competitive_moat",
+          "team_solution_fit",
+          "solution_evidence",
+          "team_market_fit",
+          "early_demand",
+          "traffic_authority",
+          "marketing_product_fit",
+        ])
+        .describe("The factor to update"),
+      score: z.number().min(0).max(5).describe("The score (0-5) for this factor"),
+      reasoning: z.string().describe("Explanation of why this score was given"),
+      evidence_type: z
+        .enum([
+          "conversation",
+          "user_statement",
+          "market_research",
+          "competitive_analysis",
+          "demo_feedback",
+          "metrics",
+          "other",
+        ])
+        .describe("Type of evidence supporting this score"),
+      evidence_value: z
+        .any()
+        .describe("The evidence data/value from the conversation"),
+      evidence_source: z.string().optional().describe("Source of the evidence"),
+      evidence_notes: z
+        .string()
+        .optional()
+        .describe("Additional notes about the evidence"),
+      confidence: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe("Confidence level in the evidence (0-1)"),
+    })).describe("Array of factor updates to process"),
   }),
 });
 
