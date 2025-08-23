@@ -28,6 +28,10 @@ import { useAgentAuth } from "./hooks/useAgentAuth";
 import { useAgentState } from "./hooks/useAgentState";
 import { useErrorHandling } from "./hooks/useErrorHandling";
 import { useMessageEditing } from "./hooks/useMessageEditing";
+import {
+  exportConversationToMarkdown,
+  copyToClipboard,
+} from "./utils/exportUtils";
 
 // Define agent data interface for typing
 interface AgentData {
@@ -510,6 +514,16 @@ function Chat() {
     }
     reload();
   }, [auth, reload]);
+
+  // Export conversation handler
+  const handleExportConversation = useCallback(async () => {
+    const markdownContent = exportConversationToMarkdown(agentMessages);
+    const success = await copyToClipboard(markdownContent);
+
+    if (!success) {
+      throw new Error("Failed to copy conversation to clipboard");
+    }
+  }, [agentMessages]);
 
   // Handle custom event for setting chat input from PresentationPanel
   useEffect(() => {
@@ -1038,6 +1052,7 @@ function Chat() {
               changeAgentMode(newMode);
             }}
             onClearHistory={handleClearHistory}
+            onExportConversation={handleExportConversation}
             onInputChange={handleAgentInputChange}
             onInputSubmit={(e) => {
               handleSubmitWithRetry(e);
