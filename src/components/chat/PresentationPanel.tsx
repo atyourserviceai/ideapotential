@@ -58,8 +58,11 @@ export function PresentationPanel({
       // Trigger agent to start new idea
       setChatInput("I want to assess a new startup idea");
     } else {
-      // Trigger agent to switch to existing idea
-      setChatInput(`Switch to working on idea: ${ideaId}`);
+      // Find the idea name for better UX
+      const idea = agentState?.ideas?.find(i => i.idea_id === ideaId);
+      const ideaName = idea?.title || "Unnamed Idea";
+      // Trigger agent to switch to existing idea with name included
+      setChatInput(`Switch to working on idea: ${ideaName} (${ideaId})`);
     }
   };
 
