@@ -641,7 +641,6 @@ export const selectIdea = tool({
   },
 });
 
-
 /**
  * Delete an idea permanently from the user's collection
  */

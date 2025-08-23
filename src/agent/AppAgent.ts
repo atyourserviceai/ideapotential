@@ -344,7 +344,9 @@ export class AppAgent extends AIChatAgent<Env> {
       const userId = state.userInfo?.id;
 
       if (!userId) {
-        console.error("[AppAgent] No user ID available to fetch JWT from database");
+        console.error(
+          "[AppAgent] No user ID available to fetch JWT from database"
+        );
         return null;
       }
 
@@ -361,7 +363,9 @@ export class AppAgent extends AIChatAgent<Env> {
         return tokenRow.api_key;
       }
 
-      console.warn(`[AppAgent] No JWT token found in database for user: ${userId}`);
+      console.warn(
+        `[AppAgent] No JWT token found in database for user: ${userId}`
+      );
       return null;
     } catch (error) {
       console.error("[AppAgent] Failed to fetch JWT from database:", error);
