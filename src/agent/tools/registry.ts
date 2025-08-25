@@ -20,6 +20,7 @@ import * as rawSchedulingTools from "./scheduling";
 import * as rawSearchTools from "./search";
 import * as rawSimpleFetchTools from "./simpleFetch";
 import * as rawStateTools from "./state";
+import * as rawAssessmentTools from "./assessment";
 
 // Import the wrapper function
 import {
@@ -72,14 +73,18 @@ export const schedulingTools = wrapAllToolsWithErrorHandling(
 export const searchTools = wrapAllToolsWithErrorHandling(
   rawSearchTools.searchTools as unknown as ToolCollection
 );
-export const runResearch = wrapToolWithErrorHandling(
-  rawSearchTools.runResearch as unknown as Tool
-);
+// Disabled for MVP - placeholder tool removed
+// export const runResearch = wrapToolWithErrorHandling(
+//   rawSearchTools.runResearch as unknown as Tool
+// );
 export const simpleFetchTools = wrapAllToolsWithErrorHandling(
   rawSimpleFetchTools as unknown as ToolCollection
 );
 export const stateTools = wrapAllToolsWithErrorHandling(
   rawStateTools as unknown as ToolCollection
+);
+export const assessmentTools = wrapAllToolsWithErrorHandling(
+  rawAssessmentTools as unknown as ToolCollection
 );
 export const testErrorTool = wrapToolWithErrorHandling(
   rawTestErrorTool as unknown as Tool
@@ -112,6 +117,7 @@ const toolCounts = {
   simpleFetch: countTools(simpleFetchTools),
   special: 2,
   state: countTools(stateTools), // testErrorTool and suggestActions
+  assessment: countTools(assessmentTools),
 };
 
 const totalTools = Object.values(toolCounts).reduce(
@@ -143,6 +149,14 @@ export const tools = {
   fetchWebPage: simpleFetchTools.fetchWebPage,
   generateTestReport: integrationTools.generateTestReport,
 
+  // Assessment tools
+  getAssessmentState: assessmentTools.getAssessmentState,
+  storeIdeaInformation: assessmentTools.storeIdeaInformation,
+  storeConversationInsights: assessmentTools.storeConversationInsights,
+  updateFactorScore: assessmentTools.updateFactorScore,
+  selectIdea: assessmentTools.selectIdea,
+  deleteIdea: assessmentTools.deleteIdea,
+
   // State access tools
   getAgentState: stateTools.getAgentState,
   getLocalTime: contextTools.getLocalTime,
@@ -167,7 +181,7 @@ export const tools = {
 
   // Search tools
   ...searchTools,
-  runResearch,
+  // runResearch, // Disabled for MVP
 
   // Test error tool
   testErrorTool,

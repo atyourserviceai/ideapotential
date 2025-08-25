@@ -2,12 +2,25 @@ import { ClipboardText } from "@phosphor-icons/react";
 import { useState, useId } from "react";
 import { Card } from "@/components/card/Card";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
+import { ChecklistGrid } from "@/components/assessment/ChecklistGrid";
+import { ScoreDial } from "@/components/assessment/ScoreDial";
+import { EvidenceAccordion } from "@/components/assessment/EvidenceAccordion";
+import { IdeaSwitcher } from "@/components/assessment/IdeaSwitcher";
+import type {
+  Idea,
+  ChecklistKey,
+  ChecklistItem,
+  Evidence,
+  IdeaMetrics,
+  DerivedScores,
+} from "../../types/assessment";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 
 interface PresentationPanelProps {
   agentState: AppAgentState;
   agentMode: AgentMode;
   showDebug: boolean;
+  chatIsOpen?: boolean;
 }
 
 declare global {
@@ -18,8 +31,8 @@ declare global {
 
 export function PresentationPanel({
   agentState,
-  agentMode,
   showDebug,
+  chatIsOpen = false,
 }: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const agentSettingsId = useId();
@@ -39,6 +52,20 @@ export function PresentationPanel({
     );
   };
 
+  // Handle idea switching
+  const handleIdeaChange = (ideaId: string) => {
+    if (ideaId === "new") {
+      // Trigger agent to start new idea
+      setChatInput("I want to assess a new startup idea");
+    } else {
+      // Find the idea name for better UX
+      const idea = agentState?.ideas?.find((i) => i.idea_id === ideaId);
+      const ideaName = idea?.title || "Unnamed Idea";
+      // Trigger agent to switch to existing idea with name included
+      setChatInput(`Switch to working on idea: ${ideaName} (${ideaId})`);
+    }
+  };
+
   // Check if we have any meaningful content to display
   const hasSettings =
     agentState?.settings &&
@@ -47,7 +74,55 @@ export function PresentationPanel({
         agentState.settings.operators.length > 0) ||
       agentState.settings.adminContact?.name);
 
-  const hasAnyContent = hasSettings || agentState.isOnboardingComplete;
+  const hasAssessment = Boolean(agentState?.currentIdea);
+
+  // Create default empty assessment state for display
+  const getEmptyIdea = (): Idea => {
+    const emptyMetrics: IdeaMetrics = {};
+    const emptyItem = (): ChecklistItem => ({
+      score: null,
+      evidence_strength: 0,
+      evidence: [] as Evidence[],
+    });
+    const checklist: Record<ChecklistKey, ChecklistItem> = {
+      problem_clarity: emptyItem(),
+      market_pain_mentions: emptyItem(),
+      outcome_gap: emptyItem(),
+      competitive_moat: emptyItem(),
+      team_solution_fit: emptyItem(),
+      solution_evidence: emptyItem(),
+      team_market_fit: emptyItem(),
+      early_demand: emptyItem(),
+      traffic_authority: emptyItem(),
+      marketing_product_fit: emptyItem(),
+    };
+    const derived: DerivedScores = {
+      potential_score: 0,
+      actualization_score: 0,
+      potential_bucket: "unknown",
+      actualization_bucket: "unknown",
+    };
+    return {
+      idea_id: "empty",
+      title: "Ready to validate your startup idea?",
+      one_liner: "Get a brutally honest assessment in 15 minutes",
+      stage: "concept",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      metrics: emptyMetrics,
+      checklist,
+      derived,
+      recommended_tweak: undefined,
+    };
+  };
+
+  const assessmentData: Idea = hasAssessment
+    ? (agentState.currentIdea as unknown as Idea)
+    : getEmptyIdea();
+  const checklistForUi = assessmentData.checklist as Record<
+    ChecklistKey,
+    ChecklistItem
+  >;
 
   const formatSettings = () => {
     if (!hasSettings) return "";
@@ -80,180 +155,124 @@ export function PresentationPanel({
     return settingsInfo;
   };
 
-  // Enriched fullscreen context: descriptions, quick actions and simple stats
-  const modeDescription: Record<AgentMode, string> = {
-    onboarding:
-      "Set up the agent’s purpose, defaults and operators. Finish onboarding to unlock deeper integrations.",
-    integration:
-      "Connect tools, run checks and document capabilities. Ensure everything is safe before acting.",
-    plan: "Analyze context and propose next steps without executing tools. Iterate safely before acting.",
-    act: "Execute approved actions with guardrails and visibility via the gateway.",
-  };
-
-  const quickActionsByMode: Record<
-    AgentMode,
-    Array<{ label: string; prompt: string }>
-  > = {
-    onboarding: [
-      { label: "Set language", prompt: "Set language to English" },
-      {
-        label: "Add operator",
-        prompt: "Add operator Alice (alice@example.com) as Analyst",
-      },
-      {
-        label: "Define purpose",
-        prompt: "Define the agent purpose for product research",
-      },
-    ],
-    integration: [
-      { label: "List tools", prompt: "List available tools and their status" },
-      {
-        label: "Run tests",
-        prompt: "Run integration tests for configured tools",
-      },
-      { label: "Document a tool", prompt: "Document the 'fetchWebPage' tool" },
-    ],
-    plan: [
-      {
-        label: "Summarize context",
-        prompt: "Summarize current context and known inputs",
-      },
-      {
-        label: "Propose next steps",
-        prompt: "Propose next 3 steps and assumptions",
-      },
-      {
-        label: "Risk check",
-        prompt: "List risks and mitigations before execution",
-      },
-    ],
-    act: [
-      { label: "Execute task", prompt: "Execute the top recommended action" },
-      {
-        label: "Schedule",
-        prompt: "Schedule a follow-up task for tomorrow 9am",
-      },
-      { label: "Export data", prompt: "Export current agent data as backup" },
-    ],
-  };
-
-  const quickActions = quickActionsByMode[agentMode] || [];
-  const onboardingComplete = !!agentState.isOnboardingComplete;
-  const integrationComplete = !!agentState.isIntegrationComplete;
-  const testCount = agentState.testResults
-    ? Object.keys(agentState.testResults).length
-    : 0;
-  const lastModeChange = agentState._lastModeChange
-    ? new Date(agentState._lastModeChange)
-    : null;
-
   return (
-    <div className="h-full bg-white dark:bg-neutral-900 p-3 md:p-4 overflow-auto">
-      {/* Hero / mode banner with quick stats and actions */}
-      <div className="relative overflow-hidden rounded-xl p-4 md:p-6 lg:p-8 mb-4 bg-gradient-to-br from-neutral-100/80 to-neutral-200/60 dark:from-neutral-900/60 dark:to-neutral-800/40 ring-1 ring-black/5 dark:ring-white/10">
-        <div className="flex flex-col gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-800 text-white dark:bg-white dark:text-neutral-900">
-              <span>Mode</span>
-              <span className="opacity-80">•</span>
-              <span className="capitalize">{agentMode}</span>
-            </div>
-            <h2 className="mt-3 text-xl md:text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white">
-              {agentMode === "onboarding" && "Welcome—let's set you up"}
-              {agentMode === "integration" && "Validate and connect tools"}
-              {agentMode === "plan" && "Think before you act"}
-              {agentMode === "act" && "Execute with confidence"}
-            </h2>
-            <p className="mt-2 text-sm md:text-base text-neutral-700 dark:text-neutral-300 max-w-2xl">
-              {modeDescription[agentMode]}
-            </p>
-          </div>
-
-          {/* Stats grid - mobile: 2 cols, desktop: 3 cols */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
-            <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
-              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                Onboarding
-              </p>
-              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">
-                {onboardingComplete ? "Complete" : "In progress"}
-              </p>
-            </div>
-            <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
-              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                Integration
-              </p>
-              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">
-                {integrationComplete ? "Complete" : `${testCount} tests`}
-              </p>
-            </div>
-            <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10 md:col-auto col-span-2">
-              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                Last change
-              </p>
-              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">
-                {lastModeChange ? lastModeChange.toLocaleString() : "—"}
-              </p>
-            </div>
-          </div>
+    // Behave as full-background friendly panel with max width for better readability
+    <div className="h-full w-full bg-white dark:bg-neutral-900 p-3 md:p-4 overflow-auto">
+      <div
+        className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
+          chatIsOpen ? "md:mr-[540px] md:pr-4" : "md:pr-8"
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
+          <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
         </div>
 
-        {/* Quick actions - mobile: scrollable, desktop: wrap */}
-        {(() => {
-          return quickActions.length > 0 ? (
-            <div className="mt-4 flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible pb-2 md:pb-0">
-              {quickActions.map((qa) => (
-                <button
-                  key={qa.label}
-                  type="button"
-                  className="flex-shrink-0 px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity whitespace-nowrap"
-                  onClick={() => {
-                    setChatInput(qa.prompt);
-                  }}
-                >
-                  {qa.label}
-                </button>
-              ))}
-            </div>
-          ) : null;
-        })()}
-      </div>
-
-      <div className="flex items-center gap-2 mb-3">
-        <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
-        <h3 className="text-sm md:text-base font-medium">
-          Agent Configuration
-        </h3>
-      </div>
-
-      {!hasAnyContent && (
-        <div className="text-center py-8">
-          <div className="text-neutral-500 dark:text-neutral-400 mb-4">
-            <ClipboardText size={48} className="mx-auto mb-2 opacity-50" />
-            <p className="text-lg font-medium mb-2">No Configuration Yet</p>
-            <p className="text-sm">
-              Start by configuring your agent in onboarding mode
-            </p>
-          </div>
-
-          {agentMode !== "onboarding" && (
-            <button
-              type="button"
-              className="px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors"
-              onClick={() => {
-                setChatInput("Switch to onboarding mode");
-              }}
-            >
-              Go to Onboarding
-            </button>
-          )}
-        </div>
-      )}
-
-      {hasAnyContent && (
         <div className="space-y-4">
-          {/* Agent Settings */}
-          {hasSettings && (
+          {/* Always-visible Idea Switcher */}
+          <IdeaSwitcher
+            agentState={agentState}
+            onIdeaChange={handleIdeaChange}
+          />
+
+          {/* IdeaPotential Assessment - Always Show */}
+          <div>
+            {/* Idea Overview */}
+            <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
+              <div className="mb-4">
+                <h3 className="font-medium text-base md:text-lg">
+                  {assessmentData.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {assessmentData.one_liner}
+                </p>
+                {hasAssessment && (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
+                    <span>Stage: {assessmentData.stage}</span>
+                    <span>
+                      Updated:{" "}
+                      {new Date(assessmentData.updated_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                {(() => {
+                  return !hasAssessment ? (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors text-sm"
+                        onClick={() => {
+                          setChatInput("I want to assess my startup idea");
+                        }}
+                      >
+                        Start Free Assessment
+                      </button>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+
+              {/* Score Dials */}
+              <div className="flex justify-center gap-8 mb-4">
+                <ScoreDial
+                  derived={assessmentData.derived}
+                  scoreType="potential"
+                />
+                <ScoreDial
+                  derived={assessmentData.derived}
+                  scoreType="actualization"
+                />
+              </div>
+
+              {/* Recommended Tweak */}
+              {hasAssessment && assessmentData.recommended_tweak && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-medium text-sm text-blue-800 dark:text-blue-200 mb-1">
+                    Recommended Next Step
+                  </h4>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    {assessmentData.recommended_tweak}
+                  </p>
+                </div>
+              )}
+
+              {!hasAssessment && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    🚀 Skip months of uncertainty
+                  </h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                    Get a systematic assessment of your startup's potential
+                    across 10 critical factors. Our AI will guide you through
+                    evidence-based validation questions.
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-blue-700 dark:text-blue-300">
+                    <span>✓ 15-minute assessment</span>
+                    <span>✓ Actionable insights</span>
+                    <span>✓ Data-driven scoring</span>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Checklist Grid */}
+            <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
+              <ChecklistGrid
+                checklist={checklistForUi}
+                derived={assessmentData.derived}
+              />
+            </Card>
+
+            {/* Evidence Accordion - Only show if there's actual assessment */}
+            {hasAssessment && (
+              <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
+                <EvidenceAccordion checklist={checklistForUi} />
+              </Card>
+            )}
+          </div>
+
+          {/* Agent Settings - Show only in debug mode */}
+          {showDebug && hasSettings && (
             <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-medium">Agent Settings</h3>
@@ -273,38 +292,6 @@ export function PresentationPanel({
               </div>
             </Card>
           )}
-
-          {/* Progress & Health */}
-          <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Progress & Health</h3>
-            </div>
-            <div className="text-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className={`w-2 h-2 rounded-full ${agentState.isOnboardingComplete ? "bg-green-500" : "bg-yellow-500"}`}
-                />
-                <span>
-                  Onboarding:{" "}
-                  {agentState.isOnboardingComplete ? "Complete" : "In Progress"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className={`w-2 h-2 rounded-full ${agentState.isIntegrationComplete ? "bg-green-500" : "bg-gray-400"}`}
-                />
-                <span>
-                  Integration:{" "}
-                  {agentState.isIntegrationComplete
-                    ? "Complete"
-                    : `Pending (${testCount} tests)`}
-                </span>
-              </div>
-              <p className="text-neutral-600 dark:text-neutral-400 mt-2">
-                Current step: {agentState.onboardingStep || "start"}
-              </p>
-            </div>
-          </Card>
 
           {/* Raw State (Debug Mode Only) */}
           {showDebug && (
@@ -332,7 +319,7 @@ export function PresentationPanel({
             </Card>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

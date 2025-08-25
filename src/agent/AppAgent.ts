@@ -100,6 +100,117 @@ export function getErrorMessage(error: unknown): string {
 // Agent operating modes
 export type AgentMode = "onboarding" | "integration" | "plan" | "act";
 
+// IdeaPotential types for startup idea assessment
+export type ChecklistKey =
+  | "problem_clarity"
+  | "market_pain_mentions"
+  | "outcome_gap"
+  | "competitive_moat"
+  | "team_solution_fit"
+  | "solution_evidence"
+  | "team_market_fit"
+  | "early_demand"
+  | "traffic_authority"
+  | "marketing_product_fit"
+  | "other";
+
+export interface Evidence {
+  evidence_id: string;
+  // Expanded to include conversational and analysis sources used by tools
+  type:
+    | "manual_input"
+    | "auto_fetch"
+    | "peer_proof"
+    | "prospect_pulse"
+    | "seo_metric"
+    | "social_metric"
+    | "survey_response"
+    | "conversation"
+    | "user_statement"
+    | "market_research"
+    | "competitive_analysis"
+    | "demo_feedback"
+    | "metrics"
+    | "other";
+  source?: string;
+  value: unknown;
+  confidence?: number;
+  notes?: string;
+  reasoning?: string;
+  timestamp: string;
+  added_by: "agent" | "system" | "user";
+}
+
+export interface ChecklistItem {
+  score: number | null;
+  evidence_strength: 0 | 1 | 2 | 3;
+  evidence: Evidence[];
+  last_scored_at?: string;
+}
+
+export interface DerivedScores {
+  potential_score: number;
+  actualization_score: number;
+  potential_bucket: "unknown" | "red" | "yellow" | "green";
+  actualization_bucket: "unknown" | "red" | "yellow" | "green";
+}
+
+export interface IdeaMetrics {
+  waitlist_signups?: number;
+  mrr?: number;
+  lois?: number;
+  pain_mentions?: { online: number; conversations: number };
+}
+
+export interface ConversationInsight {
+  id: string;
+  type:
+    | "user_quote"
+    | "market_insight"
+    | "competitive_intel"
+    | "user_behavior"
+    | "pain_point"
+    | "solution_feedback"
+    | "early_demand"
+    | "other";
+  content: string;
+  factor_related?: ChecklistKey;
+  confidence_level?: number;
+  timestamp: string;
+}
+
+export interface Idea {
+  idea_id: string;
+  title: string;
+  one_liner: string;
+  description?: string;
+  // Additional descriptive fields used by assessment tools and UI
+  founder_background?: string;
+  target_market?: string;
+  business_model?: string;
+  conversation_insights?: ConversationInsight[];
+  stage: "concept" | "pre-MVP" | "MVP" | "post-launch";
+  created_at: string;
+  updated_at: string;
+  metrics: IdeaMetrics;
+  checklist: Record<ChecklistKey, ChecklistItem>;
+  derived: DerivedScores;
+  recommended_tweak?: string;
+}
+
+export interface FounderProfile {
+  id: string;
+  name?: string;
+  email?: string;
+  experience_years?: number;
+  team_size?: number;
+  passion_score?: number;
+  unfair_advantage?: string;
+  timezone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Define AppAgentState interface for proper typing
 export interface AppAgentState {
   mode: AgentMode;
@@ -116,7 +227,7 @@ export interface AppAgentState {
     email: string;
     credits: number;
     payment_method: string;
-    api_key?: string; // User's AtYourService.ai API key
+    // JWT API key removed - now stored only in SQLite
   };
 
   // Onboarding mode state
@@ -129,6 +240,17 @@ export interface AppAgentState {
   testReport?: TestReport;
   isIntegrationComplete?: boolean;
   transitionRecommendation?: TransitionRecommendation;
+
+  // IdeaPotential assessment state
+  founderProfile?: FounderProfile;
+  currentIdea?: Idea;
+  ideas?: Idea[];
+  assessmentProgress?: {
+    currentStep: number;
+    totalSteps: number;
+    completedFactors: ChecklistKey[];
+    isAssessmentComplete: boolean;
+  };
 
   // Optional metadata
   _lastModeChange?: string;
@@ -143,7 +265,7 @@ export class AppAgent extends AIChatAgent<Env> {
   initialState: AppAgentState = {
     isIntegrationComplete: false,
     isOnboardingComplete: false,
-    mode: "onboarding" as AgentMode,
+    mode: "act" as AgentMode, // Default to act mode for MVP
     onboardingStep: "start",
     settings: {
       adminContact: {
@@ -170,9 +292,9 @@ export class AppAgent extends AIChatAgent<Env> {
       !["onboarding", "integration", "plan", "act"].includes(state.mode)
     ) {
       console.log(
-        "[AppAgent] No valid mode found in state, defaulting to onboarding mode"
+        "[AppAgent] No valid mode found in state, defaulting to act mode"
       );
-      state.mode = "onboarding";
+      state.mode = "act"; // Default to act mode for MVP
     }
 
     // Ensure settings exists
@@ -194,6 +316,9 @@ export class AppAgent extends AIChatAgent<Env> {
 
   constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
+
+    console.log(`[AppAgent] Initialized for project-specific instance`);
+
     // Load initial state and ensure schema
     const state = this.state as AppAgentState;
     const updatedState = this.ensureStateSchema(state);
@@ -214,15 +339,58 @@ export class AppAgent extends AIChatAgent<Env> {
   }
 
   /**
+   * Get JWT token from SQLite database (secure method)
+   * @returns JWT token string or null if not found
+   */
+  private getJWTFromDatabase(): string | null {
+    try {
+      const state = this.state as AppAgentState;
+      const userId = state.userInfo?.id;
+
+      if (!userId) {
+        console.error(
+          "[AppAgent] No user ID available to fetch JWT from database"
+        );
+        return null;
+      }
+
+      // Query SQLite for the JWT token
+      const result = this.sql`
+        SELECT api_key
+        FROM user_info
+        WHERE user_id = ${userId}
+        LIMIT 1
+      `;
+
+      for (const row of result) {
+        const tokenRow = row as { api_key: string };
+        return tokenRow.api_key;
+      }
+
+      console.warn(
+        `[AppAgent] No JWT token found in database for user: ${userId}`
+      );
+      return null;
+    } catch (error) {
+      console.error("[AppAgent] Failed to fetch JWT from database:", error);
+      return null;
+    }
+  }
+
+  /**
    * Get AI provider using user-specific API key if available
    * Includes retry logic for token refresh on 403 errors
    */
   getAIProvider() {
     const state = this.state as AppAgentState;
-    const userApiKey = state.userInfo?.api_key;
+    // Fetch JWT from SQLite database instead of state for security
+    const userApiKey = this.getJWTFromDatabase();
 
     if (userApiKey) {
-      const redactedApiKey = `${userApiKey.substring(0, 20)}...${userApiKey.substring(-8)}`;
+      const redactedApiKey =
+        userApiKey.length <= 4
+          ? `[REDACTED] (${userApiKey.length} chars)`
+          : `${userApiKey.substring(0, 2)}...${userApiKey.substring(-2)} (${userApiKey.length} chars)`;
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
       );
@@ -243,8 +411,8 @@ export class AppAgent extends AIChatAgent<Env> {
    */
   async refreshTokenOnError() {
     try {
-      const state = this.state as AppAgentState;
-      const currentApiKey = state.userInfo?.api_key;
+      // Fetch current JWT from SQLite database instead of state
+      const currentApiKey = this.getJWTFromDatabase();
 
       if (!currentApiKey) {
         console.log("[AppAgent] No current API key to refresh");
@@ -259,13 +427,18 @@ export class AppAgent extends AIChatAgent<Env> {
       // This will detect if the token is invalid and handle accordingly
       await this.fetchUserInfoFromOAuth(currentApiKey);
 
-      // Check if token was actually updated
-      const newState = this.state as AppAgentState;
-      const newApiKey = newState.userInfo?.api_key;
+      // Check if token was actually updated in database
+      const newApiKey = this.getJWTFromDatabase();
 
       if (newApiKey && newApiKey !== currentApiKey) {
-        const redactedOld = `${currentApiKey.substring(0, 20)}...${currentApiKey.substring(-8)}`;
-        const redactedNew = `${newApiKey.substring(0, 20)}...${newApiKey.substring(-8)}`;
+        const redactedOld =
+          currentApiKey.length <= 4
+            ? "[REDACTED]"
+            : `${currentApiKey.substring(0, 2)}...${currentApiKey.substring(-2)} (${currentApiKey.length} chars)`;
+        const redactedNew =
+          newApiKey.length <= 4
+            ? "[REDACTED]"
+            : `${newApiKey.substring(0, 2)}...${newApiKey.substring(-2)} (${newApiKey.length} chars)`;
         console.log(
           `[AppAgent] ✅ Token refreshed: ${redactedOld} → ${redactedNew}`
         );
@@ -311,27 +484,31 @@ export class AppAgent extends AIChatAgent<Env> {
       // Context tools
       getWeatherInformation: tools.getWeatherInformation,
 
-      // Search tools
-      runResearch: tools.runResearch,
-
       // Scheduling tools
       scheduleTask: tools.scheduleTask,
       setMode: tools.setMode,
 
-      // Messaging tools
-      suggestActions: tools.suggestActions,
+      // Messaging tools (limited for MVP)
+      // suggestActions: tools.suggestActions, // Disabled - not working well
     };
 
     // Mode-specific tools
     switch (mode) {
       case "onboarding":
-        // Onboarding mode - enable configuration tools
+        // Onboarding mode - enable configuration tools and assessment tools
         return {
           ...baseTools,
           checkExistingConfig: tools.checkExistingConfig,
           completeOnboarding: tools.completeOnboarding,
           getOnboardingStatus: tools.getOnboardingStatus,
           saveSettings: tools.saveSettings,
+          // Assessment tools for idea validation (also available during onboarding)
+          getAssessmentState: tools.getAssessmentState,
+          storeIdeaInformation: tools.storeIdeaInformation,
+          storeConversationInsights: tools.storeConversationInsights,
+          updateFactorScore: tools.updateFactorScore,
+          selectIdea: tools.selectIdea,
+          deleteIdea: tools.deleteIdea,
         } as ToolSet;
 
       case "integration":
@@ -346,9 +523,16 @@ export class AppAgent extends AIChatAgent<Env> {
         } as ToolSet;
 
       case "act":
-        // Action mode - enable all tools for execution
+        // Action mode - enable assessment tools for idea validation
         return {
           ...baseTools,
+          // Assessment tools for idea validation
+          getAssessmentState: tools.getAssessmentState,
+          storeIdeaInformation: tools.storeIdeaInformation,
+          storeConversationInsights: tools.storeConversationInsights,
+          updateFactorScore: tools.updateFactorScore,
+          selectIdea: tools.selectIdea,
+          deleteIdea: tools.deleteIdea,
           testErrorTool: tools.testErrorTool,
         } as ToolSet;
 
@@ -425,6 +609,22 @@ export class AppAgent extends AIChatAgent<Env> {
               temperature: 1,
               onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
+
+                // Handle tool validation errors specifically
+                if (error && typeof error === "object" && "message" in error) {
+                  const errorMessage = String(error.message);
+                  if (
+                    errorMessage.includes("Invalid arguments for tool") &&
+                    errorMessage.includes("Type validation failed")
+                  ) {
+                    console.log(
+                      "[AppAgent] Tool validation error detected, converting to non-fatal error"
+                    );
+                    // Don't throw - let the stream continue and handle this as a tool error
+                    return;
+                  }
+                }
+
                 if (
                   error &&
                   typeof error === "object" &&
@@ -462,6 +662,60 @@ export class AppAgent extends AIChatAgent<Env> {
             break; // Success, exit retry loop
           } catch (error: unknown) {
             console.error("[AppAgent] Error in onChatMessage:", error);
+
+            // Handle tool validation errors specifically
+            if (error && typeof error === "object" && "message" in error) {
+              const errorMessage = String(error.message);
+              if (
+                errorMessage.includes("Invalid arguments for tool") &&
+                errorMessage.includes("Type validation failed")
+              ) {
+                console.log(
+                  "[AppAgent] Tool validation error caught, converting to tool call error"
+                );
+
+                // Extract tool name from error message
+                const toolNameMatch = errorMessage.match(
+                  /Invalid arguments for tool (\w+):/
+                );
+                const toolName = toolNameMatch
+                  ? toolNameMatch[1]
+                  : "unknown_tool";
+
+                // Create synthetic tool call error result
+                const syntheticToolCall = {
+                  type: "tool-call" as const,
+                  toolCallId: `error-${Date.now()}`,
+                  toolName,
+                  args: {}, // Empty args since validation failed
+                };
+
+                const syntheticToolResult = {
+                  type: "tool-result" as const,
+                  toolCallId: syntheticToolCall.toolCallId,
+                  result: {
+                    success: false,
+                    error: {
+                      message: "Tool parameter validation failed",
+                      details: errorMessage,
+                      timestamp: new Date().toISOString(),
+                    },
+                  },
+                };
+
+                // Write synthetic tool call and result to stream
+                dataStream.writeData(syntheticToolCall);
+                dataStream.writeData(syntheticToolResult);
+
+                // Write a brief assistant message explaining the error
+                dataStream.writeData({
+                  type: "text",
+                  text: `I encountered a validation error with the ${toolName} tool. Please check the error details above.`,
+                });
+
+                break; // Exit retry loop without throwing
+              }
+            }
 
             // Handle 403 errors with token refresh retry
             if (
@@ -594,7 +848,7 @@ export class AppAgent extends AIChatAgent<Env> {
       url: url.toString(),
     });
 
-    // Extract OAuth token from request and ensure user info is loaded
+    // Extract OAuth token from request
     const token = url.searchParams.get("token");
     const currentState = this.state as AppAgentState;
 
@@ -637,11 +891,11 @@ export class AppAgent extends AIChatAgent<Env> {
           )
         `;
 
-        // Also update agent state for immediate use
+        // Also update agent state for immediate use (without JWT for security)
         const updatedState: AppAgentState = {
           ...currentState,
           userInfo: {
-            api_key: userInfo.api_key,
+            // JWT token removed - now stored only in SQLite for security
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,
@@ -759,14 +1013,24 @@ export class AppAgent extends AIChatAgent<Env> {
       console.log("[AppAgent] Handling /get-messages request");
 
       try {
-        // Try to get messages normally
-        const messages = (
-          this.sql`select * from cf_ai_chat_agent_messages` || []
-        ).map((row) => {
-          return JSON.parse(row.message as string);
-        });
+        // Query messages from SQLite database (persisted across DO evictions)
+        const messageRows = this
+          .sql`SELECT * FROM cf_ai_chat_agent_messages ORDER BY created_at`;
+        const messages = [];
 
+        for await (const row of messageRows) {
+          try {
+            messages.push(JSON.parse(row.message as string));
+          } catch (error) {
+            console.error(
+              "[AppAgent] Error parsing message from database:",
+              error
+            );
+            // Skip malformed messages rather than failing entirely
+          }
+        }
         const messageCount = Array.isArray(messages) ? messages.length : 0;
+
         console.log(
           `[AppAgent] /get-messages returning ${messageCount} messages`
         );
@@ -796,6 +1060,107 @@ export class AppAgent extends AIChatAgent<Env> {
           "Content-Type": "application/json",
         },
       });
+    }
+
+    // Create project endpoint
+    if (url.pathname.endsWith("/create-project") && request.method === "POST") {
+      console.log("[AppAgent] Project creation requested");
+
+      try {
+        const body = (await request.json()) as {
+          projectName: string;
+          displayName: string;
+        };
+        const { projectName, displayName } = body;
+
+        if (!projectName || !displayName) {
+          return Response.json(
+            {
+              error: "projectName and displayName are required",
+              success: false,
+            },
+            { status: 400 }
+          );
+        }
+
+        // Get user info to verify authentication
+        const state = this.state as AppAgentState;
+        if (!state.userInfo?.id) {
+          return Response.json(
+            { error: "User not authenticated", success: false },
+            { status: 401 }
+          );
+        }
+
+        // Use UserDO to create the project
+        const userDOId = this.env.UserDO.idFromName(state.userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request("https://localhost/create-project", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectName, displayName }),
+          })
+        );
+
+        if (!userDOResponse.ok) {
+          const error = await userDOResponse.text();
+          return Response.json(
+            { error: `Failed to create project: ${error}`, success: false },
+            { status: 500 }
+          );
+        }
+
+        return Response.json({ success: true });
+      } catch (error) {
+        console.error("[AppAgent] Error creating project:", error);
+        return Response.json(
+          { error: "Internal server error", success: false },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Get projects endpoint
+    if (url.pathname.endsWith("/get-projects")) {
+      console.log("[AppAgent] Projects list requested");
+
+      try {
+        // Get user info to verify authentication
+        const state = this.state as AppAgentState;
+        if (!state.userInfo?.id) {
+          return Response.json(
+            { error: "User not authenticated", success: false },
+            { status: 401 }
+          );
+        }
+
+        // Use UserDO to get projects
+        const userDOId = this.env.UserDO.idFromName(state.userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request("https://localhost/list-projects")
+        );
+
+        if (!userDOResponse.ok) {
+          const error = await userDOResponse.text();
+          return Response.json(
+            { error: `Failed to get projects: ${error}`, success: false },
+            { status: 500 }
+          );
+        }
+
+        const projects = await userDOResponse.json();
+        return Response.json(projects);
+      } catch (error) {
+        console.error("[AppAgent] Error getting projects:", error);
+        return Response.json(
+          { error: "Internal server error", success: false },
+          { status: 500 }
+        );
+      }
     }
 
     // Import endpoint to restore data from a previous export
@@ -1017,8 +1382,8 @@ export class AppAgent extends AIChatAgent<Env> {
    * Get Browser API key for the external browser rendering service
    */
   getBrowserApiKey() {
-    const state = this.state as AppAgentState;
-    const userApiKey = state.userInfo?.api_key;
+    // Fetch JWT from SQLite database instead of state for security
+    const userApiKey = this.getJWTFromDatabase();
 
     if (userApiKey) {
       return userApiKey;
@@ -1111,7 +1476,7 @@ export class AppAgent extends AIChatAgent<Env> {
       const updatedState: AppAgentState = {
         ...state,
         userInfo: {
-          api_key: token,
+          // JWT token removed - now stored only in SQLite for security
           credits: userInfo.credits,
           email: userInfo.email,
           id: userInfo.id,
@@ -1147,7 +1512,8 @@ export class AppAgent extends AIChatAgent<Env> {
         };
 
         // Check if the stored API key matches the current OAuth token
-        if (oauthToken && userInfo.api_key !== oauthToken) {
+        const storedApiKey = this.getJWTFromDatabase();
+        if (oauthToken && storedApiKey !== oauthToken) {
           console.log(
             "[AppAgent] Stored API key doesn't match current token, fetching fresh user info from OAuth"
           );
@@ -1159,7 +1525,7 @@ export class AppAgent extends AIChatAgent<Env> {
         const updatedState: AppAgentState = {
           ...state,
           userInfo: {
-            api_key: userInfo.api_key,
+            // JWT token removed - now stored only in SQLite for security
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,

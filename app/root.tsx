@@ -2,28 +2,28 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import "../src/styles.css";
 
 export const meta = () => [
-  { title: "App Agent Template" },
+  { title: "Ideapotential" },
   {
     name: "viewport",
     content: "width=device-width, initial-scale=1.0",
   },
   {
     name: "description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "Validate startup ideas with a 10-factor assessment",
   },
-  { property: "og:title", content: "App Agent Template" },
+  { property: "og:title", content: "Ideapotential" },
   {
     property: "og:description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "Validate startup ideas with a 10-factor assessment",
   },
   { property: "og:type", content: "website" },
-  { property: "og:site_name", content: "App Agent Template" },
+  { property: "og:site_name", content: "Ideapotential" },
   { property: "og:image", content: "/api/og-image" },
   { name: "twitter:card", content: "summary_large_image" },
-  { name: "twitter:title", content: "App Agent Template" },
+  { name: "twitter:title", content: "Ideapotential" },
   {
     name: "twitter:description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "Validate startup ideas with a 10-factor assessment",
   },
   { name: "twitter:image", content: "/api/og-image" },
 ];

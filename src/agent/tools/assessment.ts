@@ -1,0 +1,781 @@
+import { getCurrentAgent } from "agents";
+import { tool } from "ai";
+import { z } from "zod";
+import { generateId } from "ai";
+import type {
+  AppAgent,
+  AppAgentState,
+  ChecklistKey,
+  Evidence,
+  Idea,
+} from "../AppAgent";
+import { calculateDerivedScores } from "../utils/scoring-utils";
+
+/**
+ * Helper function to get idea progress summary
+ */
+function getIdeaProgress(idea: Idea): string {
+  const factors = Object.values(idea.checklist || {});
+  const scored = factors.filter(
+    (f) => f.score !== null && f.score !== undefined
+  ).length;
+  const totalFactors = factors.length;
+  const percentage =
+    totalFactors > 0 ? Math.round((scored / totalFactors) * 100) : 0;
+
+  if (percentage === 0) return "not started";
+  if (percentage < 50) return `${percentage}% complete (early stage)`;
+  if (percentage < 100) return `${percentage}% complete (in progress)`;
+  return "assessment complete";
+}
+
+/**
+ * Store or update basic idea information extracted from conversation
+ */
+export const storeIdeaInformation = tool({
+  description:
+    "Store or update basic idea information extracted from user conversation",
+  execute: async ({
+    title,
+    one_liner,
+    description,
+    stage,
+    founder_background,
+    target_market,
+    business_model,
+  }: {
+    title?: string;
+    one_liner?: string;
+    description?: string;
+    stage?: "concept" | "pre-MVP" | "MVP" | "post-launch";
+    founder_background?: string;
+    target_market?: string;
+    business_model?: string;
+  }) => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+      const now = new Date().toISOString();
+
+      let updatedIdea: Idea;
+
+      // If no current idea, create new one
+      if (!currentState.currentIdea) {
+        updatedIdea = {
+          idea_id: generateId(),
+          title: title || "Untitled Idea",
+          one_liner: one_liner || "",
+          description: description || "",
+          stage: stage || "concept",
+          created_at: now,
+          updated_at: now,
+          founder_background,
+          target_market,
+          business_model,
+          metrics: {},
+          checklist: {
+            problem_clarity: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+            market_pain_mentions: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+            outcome_gap: { score: null, evidence_strength: 0, evidence: [] },
+            competitive_moat: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+            team_solution_fit: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+            solution_evidence: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+            team_market_fit: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+            early_demand: { score: null, evidence_strength: 0, evidence: [] },
+            traffic_authority: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+            marketing_product_fit: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
+          },
+          derived: {
+            potential_score: 0,
+            actualization_score: 0,
+            potential_bucket: "unknown",
+            actualization_bucket: "unknown",
+          },
+        };
+      } else {
+        // Update existing idea
+        updatedIdea = {
+          ...currentState.currentIdea,
+          title: title || currentState.currentIdea.title,
+          one_liner: one_liner || currentState.currentIdea.one_liner,
+          description: description || currentState.currentIdea.description,
+          stage: stage || currentState.currentIdea.stage,
+          founder_background:
+            founder_background || currentState.currentIdea.founder_background,
+          target_market:
+            target_market || currentState.currentIdea.target_market,
+          business_model:
+            business_model || currentState.currentIdea.business_model,
+          updated_at: now,
+        };
+      }
+
+      // Update agent state
+      const existingIdeas = currentState.ideas || [];
+      const existingIdeaIndex = existingIdeas.findIndex(
+        (i) => i.idea_id === updatedIdea.idea_id
+      );
+
+      let updatedIdeas;
+      if (existingIdeaIndex >= 0) {
+        // Update existing idea
+        updatedIdeas = existingIdeas.map((i) =>
+          i.idea_id === updatedIdea.idea_id ? updatedIdea : i
+        );
+      } else {
+        // Add new idea
+        updatedIdeas = [...existingIdeas, updatedIdea];
+      }
+
+      const updatedState: AppAgentState = {
+        ...currentState,
+        currentIdea: updatedIdea,
+        ideas: updatedIdeas,
+      };
+
+      await agent.setState(updatedState);
+
+      return {
+        success: true,
+        message: `Stored idea information: ${updatedIdea.title}`,
+        idea_id: updatedIdea.idea_id,
+      };
+    } catch (error) {
+      console.error("Error storing idea information:", error);
+      return `Error storing idea information: ${error}`;
+    }
+  },
+  parameters: z.object({
+    title: z.string().optional().describe("The idea title/name"),
+    one_liner: z.string().optional().describe("A concise one-line description"),
+    description: z
+      .string()
+      .optional()
+      .describe("Detailed description of the idea"),
+    stage: z
+      .enum(["concept", "pre-MVP", "MVP", "post-launch"])
+      .optional()
+      .describe("Current development stage"),
+    founder_background: z
+      .string()
+      .optional()
+      .describe("Founder's relevant background and expertise"),
+    target_market: z
+      .string()
+      .optional()
+      .describe("Description of target market/customers"),
+    business_model: z
+      .string()
+      .optional()
+      .describe("How the business plans to make money"),
+  }),
+});
+
+/**
+ * Store conversation insights and context that don't fit other categories
+ */
+export const storeConversationInsights = tool({
+  description:
+    "Store important insights, quotes, or context from the conversation. Provide an array of insights (or single insight in array).",
+  execute: async ({
+    insights,
+  }: {
+    insights: Array<{
+      insight_type:
+        | "user_quote"
+        | "market_insight"
+        | "competitive_intel"
+        | "user_behavior"
+        | "pain_point"
+        | "solution_feedback"
+        | "early_demand"
+        | "other";
+      content: string;
+      factor_related?: ChecklistKey;
+      confidence_level?: number;
+    }>;
+  }) => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+
+      if (!currentState.currentIdea) {
+        return "Error: No idea being assessed. Store idea information first.";
+      }
+
+      const now = new Date().toISOString();
+
+      // Create insight objects
+      const processedInsights = insights.map((insight) => ({
+        id: generateId(),
+        type: insight.insight_type,
+        content: insight.content,
+        factor_related: insight.factor_related,
+        confidence_level: insight.confidence_level,
+        timestamp: now,
+      }));
+
+      // Store in conversation_insights array on the idea
+      const updatedIdea = {
+        ...currentState.currentIdea,
+        conversation_insights: [
+          ...(currentState.currentIdea.conversation_insights || []),
+          ...processedInsights,
+        ],
+        updated_at: now,
+      };
+
+      const existingIdeas = currentState.ideas || [];
+      const updatedIdeas = existingIdeas.map((i) =>
+        i.idea_id === updatedIdea.idea_id ? updatedIdea : i
+      );
+
+      const updatedState: AppAgentState = {
+        ...currentState,
+        currentIdea: updatedIdea,
+        ideas: updatedIdeas,
+      };
+
+      await agent.setState(updatedState);
+
+      const count = processedInsights.length;
+      const summary =
+        count === 1
+          ? `${processedInsights[0].type}: ${processedInsights[0].content.substring(0, 50)}...`
+          : `${count} insights (${processedInsights.map((i) => i.type).join(", ")})`;
+
+      return {
+        success: true,
+        message: `Stored ${summary}`,
+        insights_stored: count,
+        insight_ids: processedInsights.map((i) => i.id),
+      };
+    } catch (error) {
+      console.error("Error storing conversation insight:", error);
+      return `Error storing conversation insight: ${error}`;
+    }
+  },
+  parameters: z.object({
+    insights: z
+      .array(
+        z.object({
+          insight_type: z
+            .enum([
+              "user_quote",
+              "market_insight",
+              "competitive_intel",
+              "user_behavior",
+              "pain_point",
+              "solution_feedback",
+              "early_demand",
+              "other",
+            ])
+            .describe("Type of insight being stored"),
+          content: z.string().describe("The insight content or quote"),
+          factor_related: z
+            .enum([
+              "problem_clarity",
+              "market_pain_mentions",
+              "outcome_gap",
+              "competitive_moat",
+              "team_solution_fit",
+              "solution_evidence",
+              "team_market_fit",
+              "early_demand",
+              "traffic_authority",
+              "marketing_product_fit",
+              "other",
+            ])
+            .optional()
+            .describe("Which assessment factor this relates to"),
+          confidence_level: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe("Confidence in this insight (0-1)"),
+        })
+      )
+      .describe("Array of insights to store"),
+  }),
+});
+
+/**
+ * Update factor scores and add evidence based on conversation
+ */
+export const updateFactorScore = tool({
+  description:
+    "Update factor scores and add supporting evidence based on conversation. Provide an array of factor updates (or single factor update in array).",
+  execute: async ({ factor_updates }: any) => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+
+      if (!currentState.currentIdea) {
+        return "Error: No idea assessment in progress. Store idea information first.";
+      }
+
+      const idea = currentState.currentIdea;
+      const now = new Date().toISOString();
+
+      // Process all updates
+      let updatedChecklist = { ...idea.checklist };
+      const processedUpdates: any[] = [];
+
+      for (const update of factor_updates) {
+        const factorKey = update.factor as ChecklistKey;
+
+        // Create new evidence entry
+        const newEvidence: Evidence = {
+          evidence_id: generateId(),
+          type: update.evidence_type,
+          source: update.evidence_source || "conversation",
+          value: update.evidence_value,
+          confidence: update.confidence,
+          notes: update.evidence_notes,
+          reasoning: update.reasoning,
+          timestamp: now,
+          added_by: "agent",
+        };
+
+        // Update the factor
+        updatedChecklist = {
+          ...updatedChecklist,
+          [factorKey]: {
+            score: Math.max(0, Math.min(5, update.score)), // Ensure score is 0-5
+            evidence_strength: calculateEvidenceStrength([
+              ...updatedChecklist[factorKey].evidence,
+              newEvidence,
+            ]),
+            evidence: [...updatedChecklist[factorKey].evidence, newEvidence],
+            last_scored_at: now,
+          },
+        };
+
+        processedUpdates.push({
+          factor: factorKey,
+          score: update.score,
+          reasoning: update.reasoning,
+          evidence_strength: updatedChecklist[factorKey].evidence_strength,
+        });
+      }
+
+      // Recalculate derived scores
+      const derivedScores = calculateDerivedScores(updatedChecklist);
+
+      // Update idea
+      const updatedIdea: Idea = {
+        ...idea,
+        checklist: updatedChecklist,
+        derived: derivedScores,
+        updated_at: now,
+      };
+
+      // Update progress
+      const completedFactors = Object.keys(updatedChecklist).filter(
+        (key) => updatedChecklist[key as ChecklistKey].score !== null
+      ) as ChecklistKey[];
+
+      const updatedProgress = {
+        currentStep: completedFactors.length,
+        totalSteps: 10,
+        completedFactors,
+        isAssessmentComplete: completedFactors.length === 10,
+      };
+
+      // Update agent state
+      const existingIdeas = currentState.ideas || [];
+      const updatedIdeas = existingIdeas.map((i) =>
+        i.idea_id === idea.idea_id ? updatedIdea : i
+      );
+
+      const updatedState: AppAgentState = {
+        ...currentState,
+        currentIdea: updatedIdea,
+        ideas: updatedIdeas,
+        assessmentProgress: updatedProgress,
+      };
+
+      await agent.setState(updatedState);
+
+      const count = processedUpdates.length;
+      const summary =
+        count === 1
+          ? `${processedUpdates[0].factor} score to ${processedUpdates[0].score}/5 - ${processedUpdates[0].reasoning}`
+          : `${count} factors (${processedUpdates.map((u) => `${u.factor}: ${u.score}/5`).join(", ")})`;
+
+      return {
+        success: true,
+        message: `Updated ${summary}`,
+        factors_updated: count,
+        updates: processedUpdates,
+        derived_scores: derivedScores,
+        progress: updatedProgress,
+      };
+    } catch (error) {
+      console.error("Error updating factor score:", error);
+      return `Error updating factor score: ${error}`;
+    }
+  },
+  parameters: z.object({
+    factor_updates: z
+      .array(
+        z.object({
+          factor: z
+            .enum([
+              "problem_clarity",
+              "market_pain_mentions",
+              "outcome_gap",
+              "competitive_moat",
+              "team_solution_fit",
+              "solution_evidence",
+              "team_market_fit",
+              "early_demand",
+              "traffic_authority",
+              "marketing_product_fit",
+            ])
+            .describe("The factor to update"),
+          score: z
+            .number()
+            .min(0)
+            .max(5)
+            .describe("The score (0-5) for this factor"),
+          reasoning: z
+            .string()
+            .describe("Explanation of why this score was given"),
+          evidence_type: z
+            .enum([
+              "conversation",
+              "user_statement",
+              "market_research",
+              "competitive_analysis",
+              "demo_feedback",
+              "metrics",
+              "other",
+            ])
+            .describe("Type of evidence supporting this score"),
+          evidence_value: z
+            .any()
+            .describe("The evidence data/value from the conversation"),
+          evidence_source: z
+            .string()
+            .optional()
+            .describe("Source of the evidence"),
+          evidence_notes: z
+            .string()
+            .optional()
+            .describe("Additional notes about the evidence"),
+          confidence: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe("Confidence level in the evidence (0-1)"),
+        })
+      )
+      .describe("Array of factor updates to process"),
+  }),
+});
+
+/**
+ * Get current idea assessment state
+ */
+export const getAssessmentState = tool({
+  description: "Get the current idea assessment progress and scores",
+  execute: async () => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+
+      if (!currentState.currentIdea) {
+        return {
+          hasAssessment: false,
+          message:
+            "No idea assessment in progress. Start by describing your startup idea.",
+        };
+      }
+
+      const idea = currentState.currentIdea;
+
+      return {
+        hasAssessment: true,
+        idea: {
+          title: idea.title,
+          one_liner: idea.one_liner,
+          stage: idea.stage,
+          derived: idea.derived,
+          founder_background: idea.founder_background,
+          target_market: idea.target_market,
+          business_model: idea.business_model,
+        },
+        progress: currentState.assessmentProgress || {
+          currentStep: 0,
+          totalSteps: 10,
+          completedFactors: [],
+          isAssessmentComplete: false,
+        },
+        conversation_insights: idea.conversation_insights || [],
+      };
+    } catch (error) {
+      console.error("Error getting assessment state:", error);
+      return `Error getting assessment state: ${error}`;
+    }
+  },
+  parameters: z.object({}),
+});
+
+/**
+ * Calculate evidence strength based on evidence array
+ */
+function calculateEvidenceStrength(evidence: Evidence[]): 0 | 1 | 2 | 3 {
+  if (evidence.length === 0) return 0;
+
+  const hasHighConfidence = evidence.some(
+    (e) => e.confidence && e.confidence >= 0.8
+  );
+  const hasMultipleSources = evidence.length >= 3;
+  const hasQuantitativeData = evidence.some(
+    (e) =>
+      e.type === "metrics" ||
+      (typeof e.value === "number" && e.confidence && e.confidence >= 0.7)
+  );
+
+  if (hasQuantitativeData && hasHighConfidence) return 3;
+  if (hasHighConfidence || (hasMultipleSources && evidence.length >= 5))
+    return 2;
+  if (hasMultipleSources || evidence.length >= 2) return 1;
+  return 1;
+}
+
+/**
+ * Select which idea to focus the conversation on
+ */
+export const selectIdea = tool({
+  description:
+    "Select which idea to focus the conversation on, or start working on a new idea",
+  parameters: z.object({
+    ideaId: z
+      .string()
+      .describe("ID of the idea to select, or 'new' for starting a new idea"),
+    reason: z.string().optional().describe("Why switching to this idea"),
+  }),
+  execute: async ({ ideaId, reason }) => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+
+      if (ideaId === "new") {
+        // Reset to empty state for new idea
+        const newState: AppAgentState = {
+          ...currentState,
+          currentIdea: undefined,
+          assessmentProgress: {
+            currentStep: 0,
+            totalSteps: 10,
+            completedFactors: [],
+            isAssessmentComplete: false,
+          },
+        };
+
+        await agent.setState(newState);
+
+        return "Ready to work on a new idea. Please describe your startup concept and I'll guide you through the assessment.";
+      }
+
+      const idea = currentState.ideas?.find((i) => i.idea_id === ideaId);
+      if (!idea) {
+        const availableIdeas =
+          currentState.ideas
+            ?.map((i) => `"${i.title}" (${i.idea_id})`)
+            .join(", ") || "none";
+        return `Idea not found. Available ideas: ${availableIdeas}`;
+      }
+
+      const newState: AppAgentState = {
+        ...currentState,
+        currentIdea: idea,
+      };
+
+      await agent.setState(newState);
+
+      const progress = getIdeaProgress(idea);
+      const reasonText = reason ? ` (${reason})` : "";
+
+      return `Now focusing on "${idea.title}"${reasonText}. Current status: ${progress}. How would you like to continue working on this idea?`;
+    } catch (error) {
+      console.error("Error in selectIdea:", error);
+      return `Error selecting idea: ${error instanceof Error ? error.message : "Unknown error"}`;
+    }
+  },
+});
+
+/**
+ * Delete an idea permanently from the user's collection
+ */
+export const deleteIdea = tool({
+  description: "Delete an idea permanently from the user's collection",
+  execute: async ({
+    ideaId,
+    confirmDelete,
+  }: {
+    ideaId?: string;
+    confirmDelete: boolean;
+  }) => {
+    const { agent } = getCurrentAgent<AppAgent>();
+
+    if (!agent) {
+      return "Error: Could not get agent reference";
+    }
+
+    if (!confirmDelete) {
+      return "Deletion cancelled. Please confirm deletion by setting confirmDelete to true.";
+    }
+
+    try {
+      const currentState = agent.state as AppAgentState;
+
+      // Determine which idea to delete
+      let targetIdea: Idea | undefined;
+      if (ideaId) {
+        targetIdea = currentState.ideas?.find((i) => i.idea_id === ideaId);
+      } else {
+        targetIdea = currentState.currentIdea || undefined;
+      }
+
+      if (!targetIdea) {
+        const availableIdeas =
+          currentState.ideas
+            ?.map((i) => `"${i.title}" (${i.idea_id})`)
+            .join(", ") || "none";
+        return `Idea not found. Available ideas: ${availableIdeas}`;
+      }
+
+      // Remove idea from ideas array
+      const updatedIdeas =
+        currentState.ideas?.filter((i) => i.idea_id !== targetIdea!.idea_id) ||
+        [];
+
+      // Clear current idea if it's the one being deleted
+      const updatedCurrentIdea =
+        currentState.currentIdea?.idea_id === targetIdea.idea_id
+          ? undefined
+          : currentState.currentIdea;
+
+      // Reset assessment progress if current idea was deleted
+      const updatedProgress =
+        currentState.currentIdea?.idea_id === targetIdea.idea_id
+          ? {
+              currentStep: 0,
+              totalSteps: 10,
+              completedFactors: [],
+              isAssessmentComplete: false,
+            }
+          : currentState.assessmentProgress;
+
+      const newState: AppAgentState = {
+        ...currentState,
+        ideas: updatedIdeas,
+        currentIdea: updatedCurrentIdea,
+        assessmentProgress: updatedProgress,
+      };
+
+      await agent.setState(newState);
+
+      let responseMessage = `Successfully deleted idea "${targetIdea.title}".`;
+
+      const remainingCount = updatedIdeas.length;
+      if (remainingCount > 0) {
+        responseMessage += ` You have ${remainingCount} idea${remainingCount === 1 ? "" : "s"} remaining.`;
+      } else {
+        responseMessage +=
+          " You have no ideas remaining. Feel free to start assessing a new idea!";
+      }
+
+      responseMessage +=
+        " If you'd like to start fresh, you can clear the chat history by clicking the trash can icon at the top of the chat panel.";
+
+      return {
+        success: true,
+        message: responseMessage,
+        deletedIdea: {
+          id: targetIdea.idea_id,
+          title: targetIdea.title,
+        },
+        remainingIdeas: remainingCount,
+      };
+    } catch (error) {
+      console.error("Error deleting idea:", error);
+      return `Error deleting idea: ${error instanceof Error ? error.message : "Unknown error"}`;
+    }
+  },
+  parameters: z.object({
+    ideaId: z
+      .string()
+      .optional()
+      .describe(
+        "ID of the idea to delete (if not provided, deletes current idea)"
+      ),
+    confirmDelete: z
+      .boolean()
+      .describe(
+        "Must be true to confirm deletion - prevents accidental deletion"
+      ),
+  }),
+});

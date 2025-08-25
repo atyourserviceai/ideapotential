@@ -4,14 +4,26 @@ export async function handleOgImage(
 ): Promise<Response> {
   try {
     const url = new URL(request.url);
-    const title = url.searchParams.get("title") || "App Agent Template";
+    const title = url.searchParams.get("title") || "Ideapotential";
     const description =
       url.searchParams.get("description") ||
-      "AI-powered chat agent built with Cloudflare Agents";
-    const mode = url.searchParams.get("mode") || "onboarding";
+      "Validate startup ideas with a 10-factor assessment";
+    const scoreParam = url.searchParams.get("score");
+    const score = scoreParam ? Number.parseFloat(scoreParam) : undefined;
 
     // For now, return a simple SVG-based OG image
     // This works in all environments without requiring browser rendering
+    const scoreColor =
+      score !== undefined
+        ? score >= 3.5
+          ? "#4ade80"
+          : score >= 2.5
+            ? "#fbbf24"
+            : "#f87171"
+        : "white";
+
+    const scoreText = score !== undefined ? `${score.toFixed(1)}/5.0` : "";
+
     const svg = `
       <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -25,9 +37,9 @@ export async function handleOgImage(
         <!-- Logo/Brand Area -->
         <g transform="translate(60, 60)">
           <rect x="0" y="0" width="80" height="80" rx="16" fill="rgba(255,255,255,0.2)"/>
-          <text x="40" y="50" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="bold">🤖</text>
-          <text x="110" y="35" fill="white" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600" opacity="0.9">App Agent Template</text>
-          <text x="110" y="55" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" opacity="0.7">${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode</text>
+          <text x="40" y="50" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="bold">💡</text>
+          <text x="110" y="35" fill="white" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600" opacity="0.9">Ideapotential</text>
+          <text x="110" y="55" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" opacity="0.7">Startup Validation</text>
         </g>
 
         <!-- Main Title -->
@@ -35,6 +47,18 @@ export async function handleOgImage(
 
         <!-- Description -->
         <text x="600" y="340" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="28" opacity="0.9">${description}</text>
+
+        <!-- Score Display (if provided) -->
+        ${
+          score !== undefined
+            ? `
+        <g transform="translate(600, 400)">
+          <text x="0" y="0" text-anchor="middle" fill="${scoreColor}" font-family="Inter, system-ui, sans-serif" font-size="48" font-weight="bold">${scoreText}</text>
+          <text x="0" y="30" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="18" opacity="0.8">Potential Score</text>
+        </g>
+        `
+            : ""
+        }
 
         <!-- Bottom Accent -->
         <rect x="60" y="590" width="1080" height="4" fill="rgba(255,255,255,0.3)" rx="2"/>

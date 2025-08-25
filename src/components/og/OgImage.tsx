@@ -1,13 +1,13 @@
 interface OgImageProps {
   title?: string;
   description?: string;
-  mode?: string;
+  score?: number;
 }
 
 export default function OgImage({
-  title = "App Agent Template",
-  description = "AI-powered chat agent built with Cloudflare Agents",
-  mode = "onboarding",
+  title = "Ideapotential",
+  description = "Validate startup ideas with a 10-factor assessment",
+  score,
 }: OgImageProps) {
   return (
     <div
@@ -23,6 +23,7 @@ export default function OgImage({
         fontFamily: "Inter, system-ui, sans-serif",
         padding: "60px",
         boxSizing: "border-box",
+        position: "relative",
       }}
     >
       {/* Logo/Brand Area */}
@@ -47,7 +48,7 @@ export default function OgImage({
             fontWeight: "bold",
           }}
         >
-          🤖
+          💡
         </div>
         <div>
           <div
@@ -57,7 +58,7 @@ export default function OgImage({
               opacity: 0.9,
             }}
           >
-            App Agent Template
+            Ideapotential
           </div>
           <div
             style={{
@@ -66,7 +67,7 @@ export default function OgImage({
               marginTop: "4px",
             }}
           >
-            {mode.charAt(0).toUpperCase() + mode.slice(1)} Mode
+            Startup Validation
           </div>
         </div>
       </div>
@@ -90,7 +91,7 @@ export default function OgImage({
         style={{
           fontSize: "28px",
           textAlign: "center",
-          margin: "0",
+          margin: "0 0 30px 0",
           opacity: 0.9,
           maxWidth: "900px",
           lineHeight: "1.4",
@@ -98,6 +99,37 @@ export default function OgImage({
       >
         {description}
       </p>
+
+      {/* Score Display (if provided) */}
+      {score !== undefined && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "20px",
+            marginTop: "20px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "48px",
+              fontWeight: "bold",
+              color:
+                score >= 3.5 ? "#4ade80" : score >= 2.5 ? "#fbbf24" : "#f87171",
+            }}
+          >
+            {score.toFixed(1)}/5.0
+          </div>
+          <div
+            style={{
+              fontSize: "18px",
+              opacity: 0.8,
+            }}
+          >
+            Potential Score
+          </div>
+        </div>
+      )}
 
       {/* Bottom Accent */}
       <div

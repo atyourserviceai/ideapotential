@@ -8,7 +8,7 @@ import type { AgentMode, AppAgent, AppAgentState } from "../AppAgent";
  */
 export const getAgentState = tool({
   description:
-    "Get the current agent state including mode and general settings",
+    "Get the current agent state including mode, settings, and current idea context",
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -20,13 +20,63 @@ export const getAgentState = tool({
       // Get current state
       const currentState = agent.state as AppAgentState;
 
-      // Return only the relevant fields to avoid large payloads
+      // Helper function to get idea progress
+      const getIdeaProgress = (idea: {
+        checklist?: Record<string, { score?: number | null }>;
+      }): string => {
+        if (!idea || !idea.checklist) return "not started";
+        const factors = Object.values(idea.checklist);
+        const scored = factors.filter(
+          (f) => f.score !== null && f.score !== undefined
+        ).length;
+        const totalFactors = factors.length;
+        const percentage =
+          totalFactors > 0 ? Math.round((scored / totalFactors) * 100) : 0;
+
+        if (percentage === 0) return "not started";
+        if (percentage < 50) return `${percentage}% complete (early stage)`;
+        if (percentage < 100) return `${percentage}% complete (in progress)`;
+        return "assessment complete";
+      };
+
+      // Build idea context
+      const currentIdea = currentState.currentIdea;
+      const totalIdeas = currentState.ideas?.length || 0;
+
+      // Return enhanced state with idea context
       return {
         isIntegrationComplete: currentState.isIntegrationComplete || false,
         isOnboardingComplete: currentState.isOnboardingComplete || false,
         mode: currentState.mode,
         onboardingStep: currentState.onboardingStep || "start",
         settings: currentState.settings || {},
+
+        // Enhanced idea context
+        ideaContext: {
+          currentIdea: currentIdea
+            ? {
+                id: currentIdea.idea_id,
+                title: currentIdea.title || "Untitled Idea",
+                stage: currentIdea.stage || "concept",
+                progressSummary: getIdeaProgress(currentIdea),
+                oneLiner: currentIdea.one_liner || "No description yet",
+              }
+            : null,
+          totalIdeas,
+          availableIdeas:
+            currentState.ideas?.map((i) => ({
+              id: i.idea_id,
+              title: i.title || "Untitled Idea",
+              stage: i.stage || "concept",
+              progress: getIdeaProgress(i),
+            })) || [],
+          hasMultipleIdeas: totalIdeas > 1,
+          needsIdeaSelection: totalIdeas > 0 && !currentIdea,
+        },
+
+        // Assessment progress if there's a current idea
+        assessmentProgress: currentState.assessmentProgress || null,
+        founderProfile: currentState.founderProfile || null,
       };
     } catch (error) {
       console.error("Error getting agent state:", error);
