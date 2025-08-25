@@ -668,9 +668,48 @@ export class AppAgent extends AIChatAgent<Env> {
                 errorMessage.includes("Type validation failed")
               ) {
                 console.log(
-                  "[AppAgent] Tool validation error caught in outer try-catch, treating as non-fatal"
+                  "[AppAgent] Tool validation error caught, converting to tool call error"
                 );
-                // For now, just log and continue - in the future we could inject an error message
+
+                // Extract tool name from error message
+                const toolNameMatch = errorMessage.match(
+                  /Invalid arguments for tool (\w+):/
+                );
+                const toolName = toolNameMatch
+                  ? toolNameMatch[1]
+                  : "unknown_tool";
+
+                // Create synthetic tool call error result
+                const syntheticToolCall = {
+                  type: "tool-call" as const,
+                  toolCallId: `error-${Date.now()}`,
+                  toolName,
+                  args: {}, // Empty args since validation failed
+                };
+
+                const syntheticToolResult = {
+                  type: "tool-result" as const,
+                  toolCallId: syntheticToolCall.toolCallId,
+                  result: {
+                    success: false,
+                    error: {
+                      message: "Tool parameter validation failed",
+                      details: errorMessage,
+                      timestamp: new Date().toISOString(),
+                    },
+                  },
+                };
+
+                // Write synthetic tool call and result to stream
+                dataStream.writeData(syntheticToolCall);
+                dataStream.writeData(syntheticToolResult);
+
+                // Write a brief assistant message explaining the error
+                dataStream.writeData({
+                  type: "text",
+                  text: `I encountered a validation error with the ${toolName} tool. Please check the error details above.`,
+                });
+
                 break; // Exit retry loop without throwing
               }
             }
