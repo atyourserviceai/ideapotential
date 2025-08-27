@@ -27,7 +27,8 @@ const FACTOR_INFO: Record<
   },
   outcome_gap: {
     name: "Outcome Satisfaction Gap",
-    description: "Users rate pain 'importance 5 / satisfaction ≤2'",
+    description:
+      "Users rate pain 'importance ≥8 / satisfaction ≤3' (1-10 scales)",
     blockSet: "Potential",
   },
   competitive_moat: {

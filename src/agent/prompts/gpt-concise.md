@@ -32,7 +32,7 @@ Evaluate startup ideas using these **10 critical factors** in two categories:
 
 1. **Problem Clarity** (0-5): One-sentence JTBD anyone could repeat
 2. **Market-Pain Mentions** (0-5): 50+ public posts or ≥5 direct convos confirming pain
-3. **Outcome Satisfaction Gap** (0-5): Users rate pain "importance 5 / satisfaction ≤2"
+3. **Outcome Satisfaction Gap** (0-5): Users rate pain "importance ≥8 / satisfaction ≤3" (1-10 scales)
 4. **Competitive Moat** (0-5): ≥1 power rated ≥4 (Hamilton's 7 Powers)
 5. **Team–Solution Fit** (0-5): Deep domain edge & high personal passion
 6. **Solution Evidence & Value** (0-5): Working demo + viable unit economics

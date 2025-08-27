@@ -135,7 +135,8 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
                       Outcome Satisfaction Gap
                     </td>
                     <td className="py-2">
-                      Users rate pain "importance 5 / satisfaction ≤2"
+                      Users rate pain "importance ≥8 / satisfaction ≤3" (1-10
+                      scales)
                     </td>
                   </tr>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
