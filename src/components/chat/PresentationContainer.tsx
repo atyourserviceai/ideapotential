@@ -20,7 +20,7 @@ export function PresentationContainer({
   showDebug,
   variant = "panel",
   chatIsOpen = false,
-  messageCount = 0,
+  messageCount: _messageCount = 0,
 }: PresentationContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
@@ -42,7 +42,6 @@ export function PresentationContainer({
               agentMode={agentMode}
               showDebug={showDebug}
               chatIsOpen={chatIsOpen}
-              messageCount={messageCount}
             />
           </div>
         </div>

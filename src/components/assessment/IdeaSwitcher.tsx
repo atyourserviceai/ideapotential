@@ -1,6 +1,5 @@
 import { Card } from "@/components/card/Card";
-import type { AppAgentState } from "../../agent/AppAgent";
-import type { Idea } from "../../types/assessment";
+import type { AppAgentState, Idea } from "../../agent/AppAgent";
 
 interface IdeaSwitcherProps {
   agentState: AppAgentState;

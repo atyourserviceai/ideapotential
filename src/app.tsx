@@ -19,7 +19,6 @@ import { AuthGuard } from "./components/auth/AuthGuard";
 import { UserProfile } from "./components/auth/UserProfile";
 import { Moon, Sun } from "@phosphor-icons/react";
 import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
-import { ChatProvider, useChatContext } from "./contexts/ChatContext";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import { useThemePreference } from "./hooks/useThemePreference";
@@ -29,6 +28,7 @@ import { ProjectProvider, useProject } from "./contexts/ProjectContext";
 import { ProjectSelector } from "./components/project/ProjectSelector";
 import { useAgentState } from "./hooks/useAgentState";
 import { useErrorHandling } from "./hooks/useErrorHandling";
+import type { AgentMode } from "./agent/AppAgent";
 import { useMessageEditing } from "./hooks/useMessageEditing";
 import {
   exportConversationToMarkdown,
@@ -181,7 +181,7 @@ function ProjectTab({
   isActive: boolean;
 }) {
   const agentConfig = useProjectAuth(projectName);
-  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
+  const { agent, agentMode, changeAgentMode } = useAgentState(
     agentConfig,
     "onboarding"
   );
@@ -199,13 +199,10 @@ function ProjectTab({
       }}
     >
       <ProjectTabContent
-        projectName={projectName}
         agentConfig={agentConfig}
         agent={agent}
-        agentState={agentState}
         agentMode={agentMode}
         changeAgentMode={changeAgentMode}
-        isActive={isActive}
       />
     </div>
   );
@@ -213,21 +210,15 @@ function ProjectTab({
 
 // The actual content of each project tab - contains the original Chat logic
 function ProjectTabContent({
-  projectName,
   agentConfig,
   agent,
-  agentState,
   agentMode,
   changeAgentMode,
-  isActive,
 }: {
-  projectName: string;
-  agentConfig: any;
-  agent: any;
-  agentState: any;
-  agentMode: any;
-  changeAgentMode: any;
-  isActive: boolean;
+  agentConfig: ReturnType<typeof useProjectAuth>;
+  agent: ReturnType<typeof useAgentState>["agent"];
+  agentMode: AgentMode;
+  changeAgentMode: (mode: AgentMode) => Promise<void>;
 }) {
   // Mobile viewport height fix
   useEffect(() => {
@@ -290,7 +281,9 @@ function ProjectTabContent({
   // UI-related state
   const { theme, toggleTheme } = useThemePreference();
   const [showDebug, setShowDebug] = useState(false);
-  const { activeTab, setActiveTab } = useChatContext();
+  const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
+    "presentation"
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Add temporary loading state for smoother mode transitions
   const [temporaryLoading, setTemporaryLoading] = useState(false);
@@ -520,12 +513,6 @@ function ProjectTabContent({
   // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
 
-  // Update message count in chat context for other components to use
-  const { setMessageCount } = useChatContext();
-  useEffect(() => {
-    setMessageCount(agentMessages.length);
-  }, [agentMessages.length, setMessageCount]);
-
   // Use the message editing hook to manage message editing and retry logic
   const {
     editingMessageId,
@@ -657,7 +644,6 @@ function ProjectTabContent({
     reloadWithTokenCheck,
     auth,
     setMessages,
-    setActiveTab,
   ]);
 
   // Handle action button clicks from the suggestActions tool
@@ -1056,10 +1042,10 @@ function ProjectTabContent({
     }
   };
 
-  // Layout: Unified chat panel that adapts to mobile/desktop
+  // Floating chat and controls (background rendered at App level)
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-      {/* Floating chat launcher */}
+      {/* Floating chat launcher (mobile: corner button, desktop: corner button) */}
       {activeTab !== "chat" && (
         <div className="fixed bottom-4 right-4 z-[60]">
           <button
@@ -1073,20 +1059,13 @@ function ProjectTabContent({
         </div>
       )}
 
-      {/* Chat Panel - responsive: mobile overlay, desktop side panel */}
+      {/* Floating Chat Container - mobile: full screen, desktop: corner panel */}
       <div
-        className={`
-          fixed z-[100] transition-transform duration-300 ease-in-out
-          ${activeTab === "chat" ? "translate-x-0" : "translate-x-full"}
-
-          /* Mobile: full screen overlay */
-          inset-0 md:inset-auto
-
-          /* Desktop: side panel from right with top margin for header elements */
-          md:top-16 md:right-4 md:bottom-4 md:w-[520px] md:h-auto
-        `}
+        className={`fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-[75vh] md:inset-auto overflow-hidden z-[70] ${
+          activeTab === "chat" ? "block" : "hidden"
+        }`}
       >
-        <div className="h-full w-full md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
+        <div className="h-full md:mx-0 md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
           <ChatContainer
             theme={theme}
             showDebug={showDebug}
@@ -1131,9 +1110,7 @@ export default function App() {
         <ErrorBoundary>
           <AuthProvider>
             <ProjectProvider>
-              <ChatProvider>
-                <AppContent />
-              </ChatProvider>
+              <AppContent />
             </ProjectProvider>
           </AuthProvider>
         </ErrorBoundary>
@@ -1142,7 +1119,7 @@ export default function App() {
   );
 }
 
-// App content that has access to chat context
+// App content that has access to project context
 function AppContent() {
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
@@ -1164,8 +1141,6 @@ function AppContent() {
 
 // Background presentation panel that shows with or without agent state
 function BackgroundPresentationPanel() {
-  const { activeTab, messageCount } = useChatContext();
-  const chatIsOpen = activeTab === "chat";
   const auth = useAuth();
 
   // If not authenticated, show presentation panel without agent state
@@ -1177,44 +1152,29 @@ function BackgroundPresentationPanel() {
         agentState={null}
         showDebug={false}
         variant="full"
-        chatIsOpen={chatIsOpen}
-        messageCount={messageCount}
       />
     );
   }
 
   // If authenticated, show presentation panel with agent state
-  return (
-    <AuthenticatedPresentationPanel
-      chatIsOpen={chatIsOpen}
-      messageCount={messageCount}
-    />
-  );
+  return <AuthenticatedPresentationPanel />;
 }
 
 // Component that renders the presentation panel with agent state when authenticated
-function AuthenticatedPresentationPanel({
-  chatIsOpen,
-  messageCount,
-}: {
-  chatIsOpen: boolean;
-  messageCount: number;
-}) {
+function AuthenticatedPresentationPanel() {
   // Get authenticated agent configuration for current project
   const agentConfig = useCurrentProjectAuth();
 
   // Use the agent state hook
-  const { agentState, agentMode } = useAgentState(agentConfig, "act" as const);
+  const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
 
   return (
     <PresentationContainer
       activeTab="presentation"
-      agentMode={agentMode as any}
+      agentMode={agentMode}
       agentState={agentState}
       showDebug={false}
       variant="full"
-      chatIsOpen={chatIsOpen}
-      messageCount={messageCount}
     />
   );
 }
@@ -1233,6 +1193,8 @@ function RootThemeToggle() {
 function AuthenticatedTopPanel() {
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
+  const agentConfig = useCurrentProjectAuth();
+  const { agentMode: _agentMode } = useAgentState(agentConfig, "onboarding");
   const [_showDebug, _setShowDebug] = useState(false);
   const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
     "presentation"
@@ -1245,7 +1207,7 @@ function AuthenticatedTopPanel() {
 
   return (
     <div
-      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[90] md:z-[110] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "hidden md:flex" : "flex"}`}
+      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] md:z-[80] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
     >
       <div className="flex items-center gap-2">
         <div className="order-0 md:order-0">

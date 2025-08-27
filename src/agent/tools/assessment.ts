@@ -121,6 +121,11 @@ export const storeIdeaInformation = tool({
               evidence_strength: 0,
               evidence: [],
             },
+            other: {
+              score: null,
+              evidence_strength: 0,
+              evidence: [],
+            },
           },
           derived: {
             potential_score: 0,
@@ -153,7 +158,7 @@ export const storeIdeaInformation = tool({
         (i) => i.idea_id === updatedIdea.idea_id
       );
 
-      let updatedIdeas;
+      let updatedIdeas: Idea[];
       if (existingIdeaIndex >= 0) {
         // Update existing idea
         updatedIdeas = existingIdeas.map((i) =>
@@ -348,7 +353,7 @@ export const storeConversationInsights = tool({
 export const updateFactorScore = tool({
   description:
     "Update factor scores and add supporting evidence based on conversation. Provide an array of factor updates (or single factor update in array).",
-  execute: async ({ factor_updates }: any) => {
+  execute: async ({ factor_updates }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
     if (!agent) {
@@ -367,7 +372,12 @@ export const updateFactorScore = tool({
 
       // Process all updates
       let updatedChecklist = { ...idea.checklist };
-      const processedUpdates: any[] = [];
+      const processedUpdates: Array<{
+        factor: string;
+        score: number;
+        reasoning: string;
+        evidence_strength: number;
+      }> = [];
 
       for (const update of factor_updates) {
         const factorKey = update.factor as ChecklistKey;
@@ -375,7 +385,7 @@ export const updateFactorScore = tool({
         // Create new evidence entry
         const newEvidence: Evidence = {
           evidence_id: generateId(),
-          type: update.evidence_type,
+          type: update.evidence_type as Evidence["type"],
           source: update.evidence_source || "conversation",
           value: update.evidence_value,
           confidence: update.confidence,
