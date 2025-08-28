@@ -40,6 +40,7 @@
     "SETTINGS_ENVIRONMENT": "dev",
     "COMPOSIO_API_KEY": "",
     "BROWSERBASE_API_KEY": "",
+    "SIMULATE_THINKING_TOKENS": "true",
     "ATYOURSERVICE_OAUTH_REDIRECT_URI": "http://localhost:5773/auth/callback",
   },
   "dev": {
