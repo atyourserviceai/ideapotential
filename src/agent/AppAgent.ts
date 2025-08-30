@@ -713,59 +713,8 @@ export class AppAgent extends AIChatAgent<Env> {
           } catch (error: unknown) {
             console.error("[AppAgent] Error in onChatMessage:", error);
 
-            // Handle tool validation errors specifically
-            if (error && typeof error === "object" && "message" in error) {
-              const errorMessage = String(error.message);
-              if (
-                errorMessage.includes("Invalid arguments for tool") &&
-                errorMessage.includes("Type validation failed")
-              ) {
-                console.log(
-                  "[AppAgent] Tool validation error caught, converting to tool call error"
-                );
-
-                // Extract tool name from error message
-                const toolNameMatch = errorMessage.match(
-                  /Invalid arguments for tool (\w+):/
-                );
-                const toolName = toolNameMatch
-                  ? toolNameMatch[1]
-                  : "unknown_tool";
-
-                // Create synthetic tool call error result
-                const syntheticToolCall = {
-                  type: "tool-call" as const,
-                  toolCallId: `error-${Date.now()}`,
-                  toolName,
-                  args: {}, // Empty args since validation failed
-                };
-
-                const syntheticToolResult = {
-                  type: "tool-result" as const,
-                  toolCallId: syntheticToolCall.toolCallId,
-                  result: {
-                    success: false,
-                    error: {
-                      message: "Tool parameter validation failed",
-                      details: errorMessage,
-                      timestamp: new Date().toISOString(),
-                    },
-                  },
-                };
-
-                // Write synthetic tool call and result to stream
-                dataStream.writeData(syntheticToolCall);
-                dataStream.writeData(syntheticToolResult);
-
-                // Write a brief assistant message explaining the error
-                dataStream.writeData({
-                  type: "text",
-                  text: `I encountered a validation error with the ${toolName} tool. Please check the error details above.`,
-                });
-
-                break; // Exit retry loop without throwing
-              }
-            }
+            // For tool validation errors, let them bubble up to useChat onError handler
+            // which will convert them to synthetic tool calls
 
             // Handle 403 errors with token refresh retry
             if (
