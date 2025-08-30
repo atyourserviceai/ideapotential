@@ -59,7 +59,7 @@ export const getAgentState = tool({
                 title: currentIdea.title || "Untitled Idea",
                 stage: currentIdea.stage || "concept",
                 progressSummary: getIdeaProgress(currentIdea),
-                oneLiner: currentIdea.one_liner || "No description yet",
+                oneLiner: currentIdea.one_liner || "No description yet"
               }
             : null,
           totalIdeas,
@@ -68,22 +68,22 @@ export const getAgentState = tool({
               id: i.idea_id,
               title: i.title || "Untitled Idea",
               stage: i.stage || "concept",
-              progress: getIdeaProgress(i),
+              progress: getIdeaProgress(i)
             })) || [],
           hasMultipleIdeas: totalIdeas > 1,
-          needsIdeaSelection: totalIdeas > 0 && !currentIdea,
+          needsIdeaSelection: totalIdeas > 0 && !currentIdea
         },
 
         // Assessment progress if there's a current idea
         assessmentProgress: currentState.assessmentProgress || null,
-        founderProfile: currentState.founderProfile || null,
+        founderProfile: currentState.founderProfile || null
       };
     } catch (error) {
       console.error("Error getting agent state:", error);
       return `Error getting agent state: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -107,14 +107,14 @@ export const getAgentConfig = tool({
       return {
         isOnboardingComplete: currentState.isOnboardingComplete || false,
         onboardingStep: currentState.onboardingStep || "start",
-        settings: currentState.settings || {},
+        settings: currentState.settings || {}
       };
     } catch (error) {
       console.error("Error getting agent configuration:", error);
       return `Error getting agent configuration: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -164,19 +164,19 @@ export const getIntegrationState = tool({
           isComplete:
             (totalTests > 0 && currentState.isIntegrationComplete) || false,
           successCount,
-          totalTests,
+          totalTests
         },
         testReport: currentState.testReport || null,
         testResults,
         toolDocumentation,
-        transitionRecommendation: currentState.transitionRecommendation || null,
+        transitionRecommendation: currentState.transitionRecommendation || null
       };
     } catch (error) {
       console.error("Error getting integration state:", error);
       return `Error getting integration state: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -205,8 +205,8 @@ export const getModeInfo = tool({
           act: "Execute tasks and take concrete actions",
           integration: "Test tools and integrations before deployment",
           onboarding: "Configure agent settings and initial setup",
-          plan: "Analyze tasks and create strategic plans",
-        },
+          plan: "Analyze tasks and create strategic plans"
+        }
       };
 
       // Determine available transitions based on current mode
@@ -240,7 +240,7 @@ export const getModeInfo = tool({
       return `Error getting mode info: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -251,7 +251,7 @@ export const setMode = tool({
     "Set the agent's operating mode (onboarding, integration, plan, act)",
   execute: async ({
     mode,
-    force = false,
+    force = false
   }: {
     mode: AgentMode;
     force?: boolean;
@@ -268,7 +268,7 @@ export const setMode = tool({
         currentMode: result.currentMode,
         message: `Successfully switched to ${mode} mode`,
         previousMode: result.previousMode,
-        success: true,
+        success: true
       };
     } catch (error) {
       console.error("Error setting mode:", error);
@@ -282,6 +282,6 @@ export const setMode = tool({
       .describe("Force the mode change even if conditions aren't met"),
     mode: z
       .enum(["onboarding", "integration", "plan", "act"])
-      .describe("The mode to switch to"),
-  }),
+      .describe("The mode to switch to")
+  })
 });

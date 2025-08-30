@@ -10,7 +10,7 @@ import {
   generateId,
   type StreamTextOnFinishCallback,
   streamText,
-  type ToolSet,
+  type ToolSet
 } from "ai";
 import { getUnifiedSystemPrompt } from "./prompts/index";
 import { executions, tools } from "./tools/registry";
@@ -22,13 +22,13 @@ import type {
   TestResult,
   ToolDocumentation,
   TransitionRecommendation,
-  TypedRecord,
+  TypedRecord
 } from "./types/generic";
 import {
   type DatabaseExportResult,
   exportAgentData,
   type ImportRequest,
-  importAgentData,
+  importAgentData
 } from "./utils/export-import-utils";
 import { processToolCalls } from "./utils/tool-utils";
 
@@ -39,7 +39,7 @@ const getOpenAI = (env: Env, apiKey?: string) => {
   }
   return createOpenAI({
     apiKey: apiKey,
-    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`,
+    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`
   });
 };
 
@@ -273,14 +273,14 @@ export class AppAgent extends AIChatAgent<Env> {
     settings: {
       adminContact: {
         email: "",
-        name: "",
+        name: ""
       },
       language: "en",
-      operators: [],
+      operators: []
     },
     // Integration state
     testResults: {},
-    toolDocumentation: {},
+    toolDocumentation: {}
   };
 
   // Ensure the current state matches the latest schema, merging in any missing fields
@@ -489,7 +489,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
       // Scheduling tools
       scheduleTask: tools.scheduleTask,
-      setMode: tools.setMode,
+      setMode: tools.setMode
 
       // Messaging tools (limited for MVP)
       // suggestActions: tools.suggestActions, // Disabled - not working well
@@ -511,7 +511,7 @@ export class AppAgent extends AIChatAgent<Env> {
           storeConversationInsights: tools.storeConversationInsights,
           updateFactorScore: tools.updateFactorScore,
           selectIdea: tools.selectIdea,
-          deleteIdea: tools.deleteIdea,
+          deleteIdea: tools.deleteIdea
         } as ToolSet;
 
       case "integration":
@@ -522,7 +522,7 @@ export class AppAgent extends AIChatAgent<Env> {
           documentTool: tools.documentTool,
           generateTestReport: tools.generateTestReport,
           recordTestResult: tools.recordTestResult,
-          testErrorTool: tools.testErrorTool,
+          testErrorTool: tools.testErrorTool
         } as ToolSet;
 
       case "act":
@@ -536,13 +536,13 @@ export class AppAgent extends AIChatAgent<Env> {
           updateFactorScore: tools.updateFactorScore,
           selectIdea: tools.selectIdea,
           deleteIdea: tools.deleteIdea,
-          testErrorTool: tools.testErrorTool,
+          testErrorTool: tools.testErrorTool
         } as ToolSet;
 
       default:
         // Planning mode - basic tools for planning and analysis
         return {
-          ...baseTools,
+          ...baseTools
         } as ToolSet;
     }
   }
@@ -585,7 +585,7 @@ export class AppAgent extends AIChatAgent<Env> {
           dataStream,
           executions,
           messages: this.messages,
-          tools: allTools,
+          tools: allTools
         });
 
         // Filter out empty messages for AI provider compatibility
@@ -607,26 +607,33 @@ export class AppAgent extends AIChatAgent<Env> {
             // Enable simulation for testing if environment variable is set
             if (this.env.SIMULATE_THINKING_TOKENS === "true") {
               model = simulateThinkingLLM();
-              console.log("[AppAgent] Using simulated thinking tokens for testing");
+              console.log(
+                "[AppAgent] Using simulated thinking tokens for testing"
+              );
             }
 
             // Create reasoning middleware to handle thinking tokens properly
             const _reasoningMiddleware = extractReasoningMiddleware({
               tagName: "thinking", // Common tag for thinking tokens
               onReasoningStart: () => {
-                console.log("[AppAgent] 🧠 Reasoning started - setting thinking state");
+                console.log(
+                  "[AppAgent] 🧠 Reasoning started - setting thinking state"
+                );
                 // Signal that thinking has started
                 dataStream.writeData({
                   type: "thinking-tokens",
-                  content: "", // Empty content to trigger thinking state
+                  content: "" // Empty content to trigger thinking state
                 });
               },
               onReasoningChunk: (chunk: string) => {
-                console.log("[AppAgent] 🧠 Reasoning chunk received:", chunk.substring(0, 50) + "...");
+                console.log(
+                  "[AppAgent] 🧠 Reasoning chunk received:",
+                  chunk.substring(0, 50) + "..."
+                );
                 // Stream thinking tokens in real-time
                 dataStream.writeData({
-                  type: "thinking-tokens", 
-                  content: chunk,
+                  type: "thinking-tokens",
+                  content: chunk
                 });
               },
               onReasoningEnd: () => {
@@ -698,7 +705,7 @@ export class AppAgent extends AIChatAgent<Env> {
                   // Stream thinking tokens to the client for optional display
                   dataStream.writeData({
                     type: "thinking-tokens",
-                    content: args.reasoning,
+                    content: args.reasoning
                   });
                 }
 
@@ -708,7 +715,7 @@ export class AppAgent extends AIChatAgent<Env> {
                 );
               },
               system: systemPrompt,
-              tools: allTools,
+              tools: allTools
             });
             break; // Success, exit retry loop
           } catch (error: unknown) {
@@ -748,7 +755,7 @@ export class AppAgent extends AIChatAgent<Env> {
           result.mergeIntoDataStream(dataStream);
         }
       },
-      onError: getErrorMessage,
+      onError: getErrorMessage
     });
 
     return dataStreamResponse;
@@ -764,8 +771,8 @@ export class AppAgent extends AIChatAgent<Env> {
         content: `Running scheduled task: ${description}`,
         createdAt: new Date(),
         id: generateId(),
-        role: "user",
-      },
+        role: "user"
+      }
     ]);
   }
 
@@ -845,7 +852,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
     console.log("Incoming agent request", {
       pathname: url.pathname,
-      url: url.toString(),
+      url: url.toString()
     });
 
     // Extract OAuth token from request
@@ -899,8 +906,8 @@ export class AppAgent extends AIChatAgent<Env> {
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,
-            payment_method: userInfo.payment_method,
-          },
+            payment_method: userInfo.payment_method
+          }
         };
 
         this.setState(updatedState);
@@ -929,7 +936,7 @@ export class AppAgent extends AIChatAgent<Env> {
         // Clear user info from agent state
         const updatedState: AppAgentState = {
           ...currentState,
-          userInfo: undefined,
+          userInfo: undefined
         };
 
         this.setState(updatedState);
@@ -956,7 +963,7 @@ export class AppAgent extends AIChatAgent<Env> {
           return Response.json(
             {
               error: "Method not allowed, use POST",
-              success: false,
+              success: false
             },
             { status: 405 }
           );
@@ -966,7 +973,7 @@ export class AppAgent extends AIChatAgent<Env> {
         const {
           mode: newModeString,
           force: forceFlag,
-          isAfterClearHistory: clearHistoryFlag,
+          isAfterClearHistory: clearHistoryFlag
         } = body as {
           mode?: string;
           force?: boolean;
@@ -983,7 +990,7 @@ export class AppAgent extends AIChatAgent<Env> {
           return Response.json(
             {
               error: "Invalid mode specified",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -1001,7 +1008,7 @@ export class AppAgent extends AIChatAgent<Env> {
         return Response.json(
           {
             error: error instanceof Error ? error.message : String(error),
-            success: false,
+            success: false
           },
           { status: 500 }
         );
@@ -1057,8 +1064,8 @@ export class AppAgent extends AIChatAgent<Env> {
       return new Response(JSON.stringify(exportResult, null, 2), {
         headers: {
           "Content-Disposition": `attachment; filename="agent-export-${Date.now()}.json"`,
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"
+        }
       });
     }
 
@@ -1077,7 +1084,7 @@ export class AppAgent extends AIChatAgent<Env> {
           return Response.json(
             {
               error: "projectName and displayName are required",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -1100,7 +1107,7 @@ export class AppAgent extends AIChatAgent<Env> {
           new Request("https://localhost/create-project", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ projectName, displayName }),
+            body: JSON.stringify({ projectName, displayName })
           })
         );
 
@@ -1170,7 +1177,7 @@ export class AppAgent extends AIChatAgent<Env> {
         return Response.json(
           {
             error: "Method not allowed, use POST",
-            success: false,
+            success: false
           },
           { status: 405 }
         );
@@ -1194,7 +1201,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "No file provided in the request. Please upload a backup file.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -1211,7 +1218,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "Invalid JSON file format. Could not parse the backup file.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -1223,7 +1230,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "Invalid backup file structure. Missing metadata or tables.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -1240,8 +1247,8 @@ export class AppAgent extends AIChatAgent<Env> {
           options: {
             includeMessages,
             includeScheduledTasks,
-            preserveAgentId,
-          },
+            preserveAgentId
+          }
         };
       } else {
         console.log("[AppAgent] Processing JSON payload import");
@@ -1270,7 +1277,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "Invalid import data format. Expected {options, data} structure.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -1278,7 +1285,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
         importRequest = {
           data: body.data as unknown as DatabaseExportResult,
-          options: body.options || {},
+          options: body.options || {}
         };
       }
 
@@ -1305,7 +1312,7 @@ export class AppAgent extends AIChatAgent<Env> {
       messageCount,
       mode: state?.mode,
       source: typeof source === "string" ? source : "client",
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 
@@ -1317,7 +1324,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
     console.log("[AppAgent] Connection established", {
       connectionId: connection.id,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
     // SOLUTION: Load user info from database and rely on retry logic for token refresh
@@ -1334,7 +1341,7 @@ export class AppAgent extends AIChatAgent<Env> {
     connection.send(
       JSON.stringify({
         timestamp: new Date().toISOString(),
-        type: "connection-ready",
+        type: "connection-ready"
       })
     );
   }
@@ -1358,7 +1365,7 @@ export class AppAgent extends AIChatAgent<Env> {
       await this.setState({
         ...currentState,
         _lastModeChange: new Date().toISOString(),
-        mode,
+        mode
       });
 
       console.log(`[AppAgent] Mode changed to ${mode}`);
@@ -1367,7 +1374,7 @@ export class AppAgent extends AIChatAgent<Env> {
     return {
       currentMode: mode,
       previousMode,
-      success: true,
+      success: true
     };
   }
 
@@ -1410,7 +1417,7 @@ export class AppAgent extends AIChatAgent<Env> {
     const descriptions: Record<string, string> = {
       interaction_history: "Stores history of interactions",
       settings: "Stores agent settings and configuration",
-      tasks: "Stores task data",
+      tasks: "Stores task data"
     };
     return descriptions[tableName] || "Unknown table";
   }
@@ -1432,9 +1439,9 @@ export class AppAgent extends AIChatAgent<Env> {
       const response = await fetch(verifyEndpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        method: "POST",
+        method: "POST"
       });
 
       if (!response.ok) {
@@ -1480,8 +1487,8 @@ export class AppAgent extends AIChatAgent<Env> {
           credits: userInfo.credits,
           email: userInfo.email,
           id: userInfo.id,
-          payment_method: userInfo.payment_method,
-        },
+          payment_method: userInfo.payment_method
+        }
       };
 
       this.setState(updatedState);
@@ -1529,8 +1536,8 @@ export class AppAgent extends AIChatAgent<Env> {
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,
-            payment_method: userInfo.payment_method,
-          },
+            payment_method: userInfo.payment_method
+          }
         };
 
         this.setState(updatedState);

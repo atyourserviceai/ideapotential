@@ -7,7 +7,7 @@ import type {
   AppAgentState,
   ChecklistKey,
   Evidence,
-  Idea,
+  Idea
 } from "../AppAgent";
 import { calculateDerivedScores } from "../utils/scoring-utils";
 
@@ -42,7 +42,7 @@ export const storeIdeaInformation = tool({
     stage,
     founder_background,
     target_market,
-    business_model,
+    business_model
   }: {
     title?: string;
     one_liner?: string;
@@ -82,57 +82,57 @@ export const storeIdeaInformation = tool({
             problem_clarity: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             market_pain_mentions: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             outcome_gap: { score: null, evidence_strength: 0, evidence: [] },
             competitive_moat: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             team_solution_fit: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             solution_evidence: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             team_market_fit: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             early_demand: { score: null, evidence_strength: 0, evidence: [] },
             traffic_authority: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             marketing_product_fit: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
+              evidence: []
             },
             other: {
               score: null,
               evidence_strength: 0,
-              evidence: [],
-            },
+              evidence: []
+            }
           },
           derived: {
             potential_score: 0,
             actualization_score: 0,
             potential_bucket: "unknown",
-            actualization_bucket: "unknown",
-          },
+            actualization_bucket: "unknown"
+          }
         };
       } else {
         // Update existing idea
@@ -148,7 +148,7 @@ export const storeIdeaInformation = tool({
             target_market || currentState.currentIdea.target_market,
           business_model:
             business_model || currentState.currentIdea.business_model,
-          updated_at: now,
+          updated_at: now
         };
       }
 
@@ -172,7 +172,7 @@ export const storeIdeaInformation = tool({
       const updatedState: AppAgentState = {
         ...currentState,
         currentIdea: updatedIdea,
-        ideas: updatedIdeas,
+        ideas: updatedIdeas
       };
 
       await agent.setState(updatedState);
@@ -180,7 +180,7 @@ export const storeIdeaInformation = tool({
       return {
         success: true,
         message: `Stored idea information: ${updatedIdea.title}`,
-        idea_id: updatedIdea.idea_id,
+        idea_id: updatedIdea.idea_id
       };
     } catch (error) {
       console.error("Error storing idea information:", error);
@@ -209,8 +209,8 @@ export const storeIdeaInformation = tool({
     business_model: z
       .string()
       .optional()
-      .describe("How the business plans to make money"),
-  }),
+      .describe("How the business plans to make money")
+  })
 });
 
 /**
@@ -220,7 +220,7 @@ export const storeConversationInsights = tool({
   description:
     "Store important insights, quotes, or context from the conversation. Provide an array of insights (or single insight in array).",
   execute: async ({
-    insights,
+    insights
   }: {
     insights: Array<{
       insight_type:
@@ -260,7 +260,7 @@ export const storeConversationInsights = tool({
         content: insight.content,
         factor_related: insight.factor_related,
         confidence_level: insight.confidence_level,
-        timestamp: now,
+        timestamp: now
       }));
 
       // Store in conversation_insights array on the idea
@@ -268,9 +268,9 @@ export const storeConversationInsights = tool({
         ...currentState.currentIdea,
         conversation_insights: [
           ...(currentState.currentIdea.conversation_insights || []),
-          ...processedInsights,
+          ...processedInsights
         ],
-        updated_at: now,
+        updated_at: now
       };
 
       const existingIdeas = currentState.ideas || [];
@@ -281,7 +281,7 @@ export const storeConversationInsights = tool({
       const updatedState: AppAgentState = {
         ...currentState,
         currentIdea: updatedIdea,
-        ideas: updatedIdeas,
+        ideas: updatedIdeas
       };
 
       await agent.setState(updatedState);
@@ -296,7 +296,7 @@ export const storeConversationInsights = tool({
         success: true,
         message: `Stored ${summary}`,
         insights_stored: count,
-        insight_ids: processedInsights.map((i) => i.id),
+        insight_ids: processedInsights.map((i) => i.id)
       };
     } catch (error) {
       console.error("Error storing conversation insight:", error);
@@ -317,7 +317,7 @@ export const storeConversationInsights = tool({
               "solution_feedback",
               "early_demand",
               "traffic_authority",
-              "other",
+              "other"
             ])
             .describe("Type of insight being stored"),
           content: z.string().describe("The insight content or quote"),
@@ -333,7 +333,7 @@ export const storeConversationInsights = tool({
               "early_demand",
               "traffic_authority",
               "marketing_product_fit",
-              "other",
+              "other"
             ])
             .optional()
             .describe("Which assessment factor this relates to"),
@@ -342,11 +342,11 @@ export const storeConversationInsights = tool({
             .min(0)
             .max(1)
             .optional()
-            .describe("Confidence in this insight (0-1)"),
+            .describe("Confidence in this insight (0-1)")
         })
       )
-      .describe("Array of insights to store"),
-  }),
+      .describe("Array of insights to store")
+  })
 });
 
 /**
@@ -394,7 +394,7 @@ export const updateFactorScore = tool({
           notes: update.evidence_notes,
           reasoning: update.reasoning,
           timestamp: now,
-          added_by: "agent",
+          added_by: "agent"
         };
 
         // Update the factor
@@ -404,18 +404,18 @@ export const updateFactorScore = tool({
             score: Math.max(0, Math.min(5, update.score)), // Ensure score is 0-5
             evidence_strength: calculateEvidenceStrength([
               ...updatedChecklist[factorKey].evidence,
-              newEvidence,
+              newEvidence
             ]),
             evidence: [...updatedChecklist[factorKey].evidence, newEvidence],
-            last_scored_at: now,
-          },
+            last_scored_at: now
+          }
         };
 
         processedUpdates.push({
           factor: factorKey,
           score: update.score,
           reasoning: update.reasoning,
-          evidence_strength: updatedChecklist[factorKey].evidence_strength,
+          evidence_strength: updatedChecklist[factorKey].evidence_strength
         });
       }
 
@@ -427,7 +427,7 @@ export const updateFactorScore = tool({
         ...idea,
         checklist: updatedChecklist,
         derived: derivedScores,
-        updated_at: now,
+        updated_at: now
       };
 
       // Update progress
@@ -439,7 +439,7 @@ export const updateFactorScore = tool({
         currentStep: completedFactors.length,
         totalSteps: 10,
         completedFactors,
-        isAssessmentComplete: completedFactors.length === 10,
+        isAssessmentComplete: completedFactors.length === 10
       };
 
       // Update agent state
@@ -452,7 +452,7 @@ export const updateFactorScore = tool({
         ...currentState,
         currentIdea: updatedIdea,
         ideas: updatedIdeas,
-        assessmentProgress: updatedProgress,
+        assessmentProgress: updatedProgress
       };
 
       await agent.setState(updatedState);
@@ -469,7 +469,7 @@ export const updateFactorScore = tool({
         factors_updated: count,
         updates: processedUpdates,
         derived_scores: derivedScores,
-        progress: updatedProgress,
+        progress: updatedProgress
       };
     } catch (error) {
       console.error("Error updating factor score:", error);
@@ -491,7 +491,7 @@ export const updateFactorScore = tool({
               "team_market_fit",
               "early_demand",
               "traffic_authority",
-              "marketing_product_fit",
+              "marketing_product_fit"
             ])
             .describe("The factor to update"),
           score: z
@@ -510,7 +510,7 @@ export const updateFactorScore = tool({
               "competitive_analysis",
               "demo_feedback",
               "metrics",
-              "other",
+              "other"
             ])
             .describe("Type of evidence supporting this score"),
           evidence_value: z
@@ -529,11 +529,11 @@ export const updateFactorScore = tool({
             .min(0)
             .max(1)
             .optional()
-            .describe("Confidence level in the evidence (0-1)"),
+            .describe("Confidence level in the evidence (0-1)")
         })
       )
-      .describe("Array of factor updates to process"),
-  }),
+      .describe("Array of factor updates to process")
+  })
 });
 
 /**
@@ -555,7 +555,7 @@ export const getAssessmentState = tool({
         return {
           hasAssessment: false,
           message:
-            "No idea assessment in progress. Start by describing your startup idea.",
+            "No idea assessment in progress. Start by describing your startup idea."
         };
       }
 
@@ -570,22 +570,22 @@ export const getAssessmentState = tool({
           derived: idea.derived,
           founder_background: idea.founder_background,
           target_market: idea.target_market,
-          business_model: idea.business_model,
+          business_model: idea.business_model
         },
         progress: currentState.assessmentProgress || {
           currentStep: 0,
           totalSteps: 10,
           completedFactors: [],
-          isAssessmentComplete: false,
+          isAssessmentComplete: false
         },
-        conversation_insights: idea.conversation_insights || [],
+        conversation_insights: idea.conversation_insights || []
       };
     } catch (error) {
       console.error("Error getting assessment state:", error);
       return `Error getting assessment state: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -621,7 +621,7 @@ export const selectIdea = tool({
     ideaId: z
       .string()
       .describe("ID of the idea to select, or 'new' for starting a new idea"),
-    reason: z.string().optional().describe("Why switching to this idea"),
+    reason: z.string().optional().describe("Why switching to this idea")
   }),
   execute: async ({ ideaId, reason }) => {
     const { agent } = getCurrentAgent<AppAgent>();
@@ -642,8 +642,8 @@ export const selectIdea = tool({
             currentStep: 0,
             totalSteps: 10,
             completedFactors: [],
-            isAssessmentComplete: false,
-          },
+            isAssessmentComplete: false
+          }
         };
 
         await agent.setState(newState);
@@ -662,7 +662,7 @@ export const selectIdea = tool({
 
       const newState: AppAgentState = {
         ...currentState,
-        currentIdea: idea,
+        currentIdea: idea
       };
 
       await agent.setState(newState);
@@ -675,7 +675,7 @@ export const selectIdea = tool({
       console.error("Error in selectIdea:", error);
       return `Error selecting idea: ${error instanceof Error ? error.message : "Unknown error"}`;
     }
-  },
+  }
 });
 
 /**
@@ -685,7 +685,7 @@ export const deleteIdea = tool({
   description: "Delete an idea permanently from the user's collection",
   execute: async ({
     ideaId,
-    confirmDelete,
+    confirmDelete
   }: {
     ideaId?: string;
     confirmDelete: boolean;
@@ -737,7 +737,7 @@ export const deleteIdea = tool({
               currentStep: 0,
               totalSteps: 10,
               completedFactors: [],
-              isAssessmentComplete: false,
+              isAssessmentComplete: false
             }
           : currentState.assessmentProgress;
 
@@ -745,7 +745,7 @@ export const deleteIdea = tool({
         ...currentState,
         ideas: updatedIdeas,
         currentIdea: updatedCurrentIdea,
-        assessmentProgress: updatedProgress,
+        assessmentProgress: updatedProgress
       };
 
       await agent.setState(newState);
@@ -768,9 +768,9 @@ export const deleteIdea = tool({
         message: responseMessage,
         deletedIdea: {
           id: targetIdea.idea_id,
-          title: targetIdea.title,
+          title: targetIdea.title
         },
-        remainingIdeas: remainingCount,
+        remainingIdeas: remainingCount
       };
     } catch (error) {
       console.error("Error deleting idea:", error);
@@ -788,6 +788,6 @@ export const deleteIdea = tool({
       .boolean()
       .describe(
         "Must be true to confirm deletion - prevents accidental deletion"
-      ),
-  }),
+      )
+  })
 });

@@ -70,7 +70,7 @@ export const selectIdea = tool({
     ideaId: z
       .string()
       .describe("ID of the idea to select, or 'new' for new idea"),
-    reason: z.string().optional().describe("Why switching to this idea"),
+    reason: z.string().optional().describe("Why switching to this idea")
   }),
   execute: async ({ ideaId, reason }, { state, setState }) => {
     if (ideaId === "new") {
@@ -81,8 +81,8 @@ export const selectIdea = tool({
         assessmentProgress: {
           currentStep: 0,
           totalSteps: 10,
-          completedFactors: [],
-        },
+          completedFactors: []
+        }
       });
       return "Ready to work on a new idea. Please describe your startup concept.";
     }
@@ -98,11 +98,11 @@ export const selectIdea = tool({
 
     setState({
       ...state,
-      currentIdea: idea,
+      currentIdea: idea
     });
 
     return `Now focusing on "${idea.title}". Current status: ${getIdeaProgress(idea)}`;
-  },
+  }
 });
 ```
 
@@ -124,7 +124,7 @@ export const getAgentState = tool({
             id: currentIdea.idea_id,
             title: currentIdea.title,
             stage: currentIdea.stage,
-            progressSummary: getIdeaProgress(currentIdea),
+            progressSummary: getIdeaProgress(currentIdea)
           }
         : null,
       totalIdeas,
@@ -132,12 +132,12 @@ export const getAgentState = tool({
         state.ideas?.map((i) => ({
           id: i.idea_id,
           title: i.title,
-          stage: i.stage,
+          stage: i.stage
         })) || [],
       founderProfile: state.founderProfile,
-      assessmentProgress: state.assessmentProgress,
+      assessmentProgress: state.assessmentProgress
     };
-  },
+  }
 });
 ```
 

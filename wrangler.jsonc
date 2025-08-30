@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1,
+    "head_sampling_rate": 1
   },
   "ai": {
     "binding": "AI"
@@ -14,29 +14,29 @@
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
-    "not_found_handling": "none",
+    "not_found_handling": "none"
   },
   "durable_objects": {
     "bindings": [
       {
         "name": "AppAgent",
-        "class_name": "AppAgent",
+        "class_name": "AppAgent"
       },
       {
         "name": "UserDO",
-        "class_name": "UserDO",
-      },
-    ],
+        "class_name": "UserDO"
+      }
+    ]
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["AppAgent"],
+      "new_sqlite_classes": ["AppAgent"]
     },
     {
       "tag": "v2",
-      "new_sqlite_classes": ["UserDO"],
-    },
+      "new_sqlite_classes": ["UserDO"]
+    }
   ],
   "vars": {
     "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
@@ -45,11 +45,11 @@
     "COMPOSIO_API_KEY": "",
     "BROWSERBASE_API_KEY": "",
     "SIMULATE_THINKING_TOKENS": "true",
-    "ATYOURSERVICE_OAUTH_REDIRECT_URI": "http://localhost:5773/auth/callback",
+    "ATYOURSERVICE_OAUTH_REDIRECT_URI": "http://localhost:5773/auth/callback"
   },
   "dev": {
     "port": 8774,
-    "inspector_port": 9830,
+    "inspector_port": 9830
   },
   "env": {
     "staging": {
@@ -57,23 +57,23 @@
         "bindings": [
           {
             "name": "AppAgent",
-            "class_name": "AppAgent",
+            "class_name": "AppAgent"
           },
           {
             "name": "UserDO",
-            "class_name": "UserDO",
-          },
-        ],
+            "class_name": "UserDO"
+          }
+        ]
       },
       "migrations": [
         {
           "tag": "v1",
-          "new_sqlite_classes": ["AppAgent"],
+          "new_sqlite_classes": ["AppAgent"]
         },
         {
           "tag": "v2",
-          "new_sqlite_classes": ["UserDO"],
-        },
+          "new_sqlite_classes": ["UserDO"]
+        }
       ],
       "vars": {
         "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
@@ -81,37 +81,37 @@
         "SETTINGS_ENVIRONMENT": "staging",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://staging.ideapotential.com/auth/callback",
+        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://staging.ideapotential.com/auth/callback"
       },
       "routes": [
         {
           "pattern": "staging.ideapotential.com",
-          "custom_domain": true,
-        },
-      ],
+          "custom_domain": true
+        }
+      ]
     },
     "production": {
       "durable_objects": {
         "bindings": [
           {
             "name": "AppAgent",
-            "class_name": "AppAgent",
+            "class_name": "AppAgent"
           },
           {
             "name": "UserDO",
-            "class_name": "UserDO",
-          },
-        ],
+            "class_name": "UserDO"
+          }
+        ]
       },
       "migrations": [
         {
           "tag": "v1",
-          "new_sqlite_classes": ["AppAgent"],
+          "new_sqlite_classes": ["AppAgent"]
         },
         {
           "tag": "v2",
-          "new_sqlite_classes": ["UserDO"],
-        },
+          "new_sqlite_classes": ["UserDO"]
+        }
       ],
       "vars": {
         "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
@@ -119,14 +119,14 @@
         "SETTINGS_ENVIRONMENT": "production",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://ideapotential.com/auth/callback",
+        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://ideapotential.com/auth/callback"
       },
       "routes": [
         {
           "pattern": "ideapotential.com",
-          "custom_domain": true,
-        },
-      ],
-    },
-  },
+          "custom_domain": true
+        }
+      ]
+    }
+  }
 }

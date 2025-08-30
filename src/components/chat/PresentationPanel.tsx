@@ -12,7 +12,7 @@ import type {
   ChecklistItem,
   Evidence,
   IdeaMetrics,
-  DerivedScores,
+  DerivedScores
 } from "../../types/assessment";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 
@@ -32,7 +32,7 @@ declare global {
 export function PresentationPanel({
   agentState,
   showDebug,
-  chatIsOpen = false,
+  chatIsOpen = false
 }: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const agentSettingsId = useId();
@@ -82,7 +82,7 @@ export function PresentationPanel({
     const emptyItem = (): ChecklistItem => ({
       score: null,
       evidence_strength: 0,
-      evidence: [] as Evidence[],
+      evidence: [] as Evidence[]
     });
     const checklist: Record<ChecklistKey, ChecklistItem> = {
       problem_clarity: emptyItem(),
@@ -94,13 +94,13 @@ export function PresentationPanel({
       team_market_fit: emptyItem(),
       early_demand: emptyItem(),
       traffic_authority: emptyItem(),
-      marketing_product_fit: emptyItem(),
+      marketing_product_fit: emptyItem()
     };
     const derived: DerivedScores = {
       potential_score: 0,
       actualization_score: 0,
       potential_bucket: "unknown",
-      actualization_bucket: "unknown",
+      actualization_bucket: "unknown"
     };
     return {
       idea_id: "empty",
@@ -112,7 +112,7 @@ export function PresentationPanel({
       metrics: emptyMetrics,
       checklist,
       derived,
-      recommended_tweak: undefined,
+      recommended_tweak: undefined
     };
   };
 

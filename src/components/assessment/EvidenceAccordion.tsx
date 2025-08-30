@@ -5,12 +5,12 @@ import {
   Globe,
   User,
   Brain,
-  Robot,
+  Robot
 } from "@phosphor-icons/react";
 import type {
   ChecklistKey,
   ChecklistItem,
-  Evidence,
+  Evidence
 } from "../../types/assessment";
 
 interface EvidenceAccordionProps {
@@ -28,7 +28,7 @@ const FACTOR_NAMES: Record<ChecklistKey, string> = {
   team_market_fit: "Team–Market Fit",
   early_demand: "Early Demand",
   traffic_authority: "Traffic Authority",
-  marketing_product_fit: "Marketing Fit",
+  marketing_product_fit: "Marketing Fit"
 };
 
 function getEvidenceIcon(evidence: Evidence) {

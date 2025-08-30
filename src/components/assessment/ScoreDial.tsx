@@ -10,7 +10,7 @@ interface ScoreDialProps {
 export function ScoreDial({
   derived,
   className = "",
-  scoreType,
+  scoreType
 }: ScoreDialProps) {
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const targetPercentage =
@@ -46,25 +46,25 @@ export function ScoreDial({
         return {
           stroke: "#10b981", // emerald-500
           bg: "#d1fae5", // emerald-100
-          text: "text-emerald-700",
+          text: "text-emerald-700"
         };
       case "yellow":
         return {
           stroke: "#f59e0b", // amber-500
           bg: "#fef3c7", // amber-100
-          text: "text-amber-700",
+          text: "text-amber-700"
         };
       case "red":
         return {
           stroke: "#ef4444", // red-500
           bg: "#fee2e2", // red-100
-          text: "text-red-700",
+          text: "text-red-700"
         };
       default: // "unknown"
         return {
           stroke: "#6b7280", // gray-500
           bg: "#f3f4f6", // gray-100
-          text: "text-gray-700",
+          text: "text-gray-700"
         };
     }
   };

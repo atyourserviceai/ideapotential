@@ -15,7 +15,7 @@ export const ChecklistKeySchema = z.enum([
   "team_market_fit",
   "early_demand",
   "traffic_authority",
-  "marketing_product_fit",
+  "marketing_product_fit"
 ]);
 
 // Evidence schema
@@ -35,14 +35,14 @@ export const EvidenceSchema = z.object({
     "competitive_analysis",
     "demo_feedback",
     "metrics",
-    "other",
+    "other"
   ]),
   source: z.string().optional(),
   value: z.unknown(),
   confidence: z.number().min(0).max(1).optional(),
   notes: z.string().optional(),
   timestamp: z.string(),
-  added_by: z.enum(["agent", "system", "user"]),
+  added_by: z.enum(["agent", "system", "user"])
 });
 
 // Checklist item schema
@@ -52,10 +52,10 @@ export const ChecklistItemSchema = z.object({
     z.literal(0),
     z.literal(1),
     z.literal(2),
-    z.literal(3),
+    z.literal(3)
   ]),
   evidence: z.array(EvidenceSchema),
-  last_scored_at: z.string().optional(),
+  last_scored_at: z.string().optional()
 });
 
 // Derived scores schema
@@ -63,7 +63,7 @@ export const DerivedScoresSchema = z.object({
   potential_score: z.number().min(0).max(100),
   actualization_score: z.number().min(0).max(100),
   potential_bucket: z.enum(["unknown", "red", "yellow", "green"]),
-  actualization_bucket: z.enum(["unknown", "red", "yellow", "green"]),
+  actualization_bucket: z.enum(["unknown", "red", "yellow", "green"])
 });
 
 // Idea metrics schema
@@ -74,9 +74,9 @@ export const IdeaMetricsSchema = z.object({
   pain_mentions: z
     .object({
       online: z.number(),
-      conversations: z.number(),
+      conversations: z.number()
     })
-    .optional(),
+    .optional()
 });
 
 // Idea schema
@@ -99,12 +99,12 @@ export const IdeaSchema = z.object({
           "user_behavior",
           "pain_point",
           "solution_feedback",
-          "other",
+          "other"
         ]),
         content: z.string(),
         factor_related: ChecklistKeySchema.optional(),
         confidence_level: z.number().optional(),
-        timestamp: z.string(),
+        timestamp: z.string()
       })
     )
     .optional(),
@@ -114,7 +114,7 @@ export const IdeaSchema = z.object({
   metrics: IdeaMetricsSchema,
   checklist: z.record(ChecklistKeySchema, ChecklistItemSchema),
   derived: DerivedScoresSchema,
-  recommended_tweak: z.string().optional(),
+  recommended_tweak: z.string().optional()
 });
 
 // Founder profile schema
@@ -128,7 +128,7 @@ export const FounderProfileSchema = z.object({
   unfair_advantage: z.string().optional(),
   timezone: z.string().optional(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string()
 });
 
 // Assessment progress schema
@@ -136,7 +136,7 @@ export const AssessmentProgressSchema = z.object({
   currentStep: z.number(),
   totalSteps: z.number(),
   completedFactors: z.array(ChecklistKeySchema),
-  isAssessmentComplete: z.boolean(),
+  isAssessmentComplete: z.boolean()
 });
 
 // Type exports

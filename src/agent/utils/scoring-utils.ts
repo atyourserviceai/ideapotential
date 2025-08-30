@@ -1,7 +1,7 @@
 import type {
   ChecklistKey,
   ChecklistItem,
-  DerivedScores,
+  DerivedScores
 } from "../../types/assessment";
 
 // Define which factors belong to which category
@@ -12,13 +12,13 @@ const POTENTIAL_FACTORS: ChecklistKey[] = [
   "competitive_moat",
   "team_solution_fit",
   "solution_evidence",
-  "team_market_fit",
+  "team_market_fit"
 ];
 
 const ACTUALIZATION_FACTORS: ChecklistKey[] = [
   "early_demand",
   "traffic_authority",
-  "marketing_product_fit",
+  "marketing_product_fit"
 ];
 
 /**
@@ -66,7 +66,7 @@ export function calculateDerivedScores(
     potential_score: Math.round(potentialScore),
     actualization_score: Math.round(actualizationScore),
     potential_bucket: potentialBucket,
-    actualization_bucket: actualizationBucket,
+    actualization_bucket: actualizationBucket
   };
 }
 
@@ -131,7 +131,7 @@ export function getTopImprovementOpportunity(
     return {
       factor: lowestFactor,
       score: lowestScore,
-      category: lowestCategory,
+      category: lowestCategory
     };
   }
 

@@ -2,7 +2,7 @@ import { CheckCircle, Clock, Warning } from "@phosphor-icons/react";
 import type {
   ChecklistKey,
   ChecklistItem,
-  DerivedScores,
+  DerivedScores
 } from "../../types/assessment";
 
 interface ChecklistGridProps {
@@ -18,54 +18,54 @@ const FACTOR_INFO: Record<
   problem_clarity: {
     name: "Problem Clarity",
     description: "One-sentence JTBD anyone could repeat",
-    blockSet: "Potential",
+    blockSet: "Potential"
   },
   market_pain_mentions: {
     name: "Market-Pain Mentions",
     description: "50+ public posts or ≥5 direct convos confirming pain",
-    blockSet: "Potential",
+    blockSet: "Potential"
   },
   outcome_gap: {
     name: "Outcome Satisfaction Gap",
     description:
       "Users rate pain 'importance ≥8 / satisfaction ≤3' (1-10 scales)",
-    blockSet: "Potential",
+    blockSet: "Potential"
   },
   competitive_moat: {
     name: "Competitive Moat",
     description: "≥1 power rated ≥4 (Hamilton's 7 Powers)",
-    blockSet: "Potential",
+    blockSet: "Potential"
   },
   team_solution_fit: {
     name: "Team–Solution Fit",
     description: "Deep domain edge & high personal passion",
-    blockSet: "Potential",
+    blockSet: "Potential"
   },
   solution_evidence: {
     name: "Solution Evidence & Value",
     description: "Working demo + viable unit economics",
-    blockSet: "Potential",
+    blockSet: "Potential"
   },
   team_market_fit: {
     name: "Team–Market Fit",
     description: "Market size can support the necessary team size",
-    blockSet: "Potential",
+    blockSet: "Potential"
   },
   early_demand: {
     name: "Early Demand (+Social)",
     description: "Paid pre-orders or 100+ wait-list with engaged followers",
-    blockSet: "Actualization",
+    blockSet: "Actualization"
   },
   traffic_authority: {
     name: "Traffic Authority (SEO / RAO)",
     description: "DR > 50 or 10k/mo organic or surfaced in top-3 RAG answers",
-    blockSet: "Actualization",
+    blockSet: "Actualization"
   },
   marketing_product_fit: {
     name: "Marketing-Product Fit",
     description: "Proven CAC < LTV / 3 on real spend",
-    blockSet: "Actualization",
-  },
+    blockSet: "Actualization"
+  }
 };
 
 function getScoreColor(score: number | null): string {
