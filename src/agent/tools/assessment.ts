@@ -231,6 +231,7 @@ export const storeConversationInsights = tool({
         | "pain_point"
         | "solution_feedback"
         | "early_demand"
+        | "traffic_authority"
         | "other";
       content: string;
       factor_related?: ChecklistKey;
@@ -315,6 +316,7 @@ export const storeConversationInsights = tool({
               "pain_point",
               "solution_feedback",
               "early_demand",
+              "traffic_authority",
               "other",
             ])
             .describe("Type of insight being stored"),

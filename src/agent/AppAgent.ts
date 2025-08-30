@@ -174,6 +174,7 @@ export interface ConversationInsight {
     | "pain_point"
     | "solution_feedback"
     | "early_demand"
+    | "traffic_authority"
     | "other";
   content: string;
   factor_related?: ChecklistKey;
