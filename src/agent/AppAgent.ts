@@ -927,13 +927,12 @@ export class AppAgent extends AIChatAgent<Env> {
           : "null";
         console.log(`[AppAgent] Storing JWT token: ${redactedToken}`);
 
-        // Store user info in local database for backwards compatibility
+        // Store user info in local database (excluding api_key - only in UserDO)
         await this.sql`
           INSERT OR REPLACE INTO user_info (
-            user_id, api_key, email, credits, payment_method, updated_at
+            user_id, email, credits, payment_method, updated_at
           ) VALUES (
             ${userInfo.user_id},
-            ${userInfo.api_key},
             ${userInfo.email},
             ${userInfo.credits},
             ${userInfo.payment_method},
@@ -965,20 +964,7 @@ export class AppAgent extends AIChatAgent<Env> {
           console.error(`[AppAgent] Error storing in UserDO:`, userDOError);
         }
 
-        // Verify the token was stored correctly in local database
-        const storedResult = this.sql`
-          SELECT api_key FROM user_info WHERE user_id = ${userInfo.user_id} LIMIT 1
-        `;
-
-        for (const row of storedResult) {
-          const storedRow = row as { api_key: string };
-          const storedRedacted = storedRow.api_key
-            ? `${storedRow.api_key.substring(0, 10)}...${storedRow.api_key.substring(-4)} (${storedRow.api_key.length} chars)`
-            : "null";
-          console.log(
-            `[AppAgent] Verification - token now in local database: ${storedRedacted}`
-          );
-        }
+        // JWT token is now stored only in centralized UserDO, not in local database
 
         // Also update agent state for immediate use (without JWT for security)
         const updatedState: AppAgentState = {
@@ -1545,20 +1531,48 @@ export class AppAgent extends AIChatAgent<Env> {
         `[AppAgent] Fetched user info from OAuth for user: ${userInfo.id}`
       );
 
-      // Store in database for future use
-      // OAuth token IS the gateway API key
+      // Store user info in local database (excluding api_key - only in UserDO)
+      // OAuth token IS the gateway API key but stored only in UserDO
       await this.sql`
         INSERT OR REPLACE INTO user_info (
-          user_id, api_key, email, credits, payment_method, updated_at
+          user_id, email, credits, payment_method, updated_at
         ) VALUES (
           ${userInfo.id},
-          ${token},
           ${userInfo.email},
           ${userInfo.credits},
           ${userInfo.payment_method},
           ${new Date().toISOString()}
         )
       `;
+      
+      // Store JWT token ONLY in centralized UserDO
+      try {
+        const userDOId = this.env.UserDO.idFromName(userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+        
+        const userDOResponse = await userDO.fetch(
+          new Request(`https://user-do/store-user-info`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userInfo.id,
+              api_key: token,
+              email: userInfo.email,
+              credits: userInfo.credits,
+              payment_method: userInfo.payment_method
+            })
+          })
+        );
+        
+        if (userDOResponse.ok) {
+          console.log(`[AppAgent] Successfully stored JWT token in UserDO for user: ${userInfo.id}`);
+        } else {
+          const errorText = await userDOResponse.text();
+          console.error(`[AppAgent] Failed to store JWT in UserDO: ${userDOResponse.status} - ${errorText}`);
+        }
+      } catch (userDOError) {
+        console.error(`[AppAgent] Error storing JWT in UserDO:`, userDOError);
+      }
 
       // Update agent state
       const state = this.state as AppAgentState;
