@@ -99,6 +99,8 @@ export const IdeaSchema = z.object({
           "user_behavior",
           "pain_point",
           "solution_feedback",
+          "early_demand",
+          "traffic_authority",
           "other"
         ]),
         content: z.string(),
