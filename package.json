@@ -13,6 +13,7 @@
     "deploy:production": "CLOUDFLARE_ENV=production pnpm run deploy",
     "logs:deployed": "wrangler tail",
     "logs:staging": "wrangler tail --env staging",
+    "logs:production": "wrangler tail --env production",
     "test": "vitest",
     "types": "wrangler types",
     "format": "prettier --write .",
