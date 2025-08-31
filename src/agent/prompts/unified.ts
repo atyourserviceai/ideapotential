@@ -9,11 +9,12 @@ export function getUnifiedSystemPrompt(): string {
 
 🛠️ TOOL USAGE RULES: When using tools, ensure all parameters match the exact format required:
 - Use only the specified enum values (e.g., stage: "concept" not "prototype")
-- If a tool call fails due to invalid parameters, fix the parameters and retry immediately
+- **AUTOMATIC RETRY**: If a tool call fails due to parameter validation errors, immediately analyze the error details, fix the parameters, and retry the tool call once. Only give up after the second failure.
+- **RETRY PROCESS**: When you see a validation error, examine the error message carefully to understand what parameter was invalid, then correct it and try again with the proper values
 - Do NOT make redundant tool calls (e.g., calling getAgentState twice)
 - Do NOT store conversation insights during simple idea switching
 - When switching ideas: selectIdea() → getAssessmentState() → respond (no other tools)
-- **RESPONSE TIMING**: Perform all relevant tool calls in one go, then provide a single response to the user (unless giving brief reflection messages like "Hmm that didn't work, let me try again")
+- **RESPONSE TIMING**: Perform all relevant tool calls in one go, then provide a single response to the user (unless giving brief reflection messages like "Let me fix that parameter error and try again")
 
 🌐 URL/DOMAIN DETECTION: When users provide URLs or domains, act immediately:
 - Patterns to detect: "ideapotential.com", "https://example.com", "www.startup.io", "app.company.com"
