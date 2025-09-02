@@ -170,24 +170,9 @@ export function PresentationPanel({
           chatIsOpen ? "md:mr-[540px] md:pr-4" : "md:pr-8"
         }`}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
-            <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
-          </div>
-          
-          {/* Export Button */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-[#F48120] text-white hover:bg-[#F48120]/90 transition-colors"
-              onClick={handleOpenExportModal}
-              title="Export as image"
-            >
-              <Export size={14} />
-              Export
-            </button>
-          </div>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
+          <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
         </div>
 
         <div className="space-y-4">
@@ -217,21 +202,29 @@ export function PresentationPanel({
                     </span>
                   </div>
                 )}
-                {(() => {
-                  return !hasAssessment ? (
-                    <div className="mt-3">
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors text-sm"
-                        onClick={() => {
-                          setChatInput("I want to assess my startup idea");
-                        }}
-                      >
-                        Start Free Assessment
-                      </button>
-                    </div>
-                  ) : null;
-                })()}
+                <div className="mt-3">
+                  {!hasAssessment ? (
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors text-sm"
+                      onClick={() => {
+                        setChatInput("I want to assess my startup idea");
+                      }}
+                    >
+                      Start Assessment
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors text-sm"
+                      onClick={handleOpenExportModal}
+                      title="Export as image"
+                    >
+                      <Export size={16} />
+                      Export Assessment
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Score Dials */}
