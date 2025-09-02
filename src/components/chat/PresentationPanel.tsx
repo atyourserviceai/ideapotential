@@ -1,4 +1,4 @@
-import { ClipboardText } from "@phosphor-icons/react";
+import { ClipboardText, Export, Image } from "@phosphor-icons/react";
 import { useState, useId } from "react";
 import { Card } from "@/components/card/Card";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
@@ -6,6 +6,7 @@ import { ChecklistGrid } from "@/components/assessment/ChecklistGrid";
 import { ScoreDial } from "@/components/assessment/ScoreDial";
 import { EvidenceAccordion } from "@/components/assessment/EvidenceAccordion";
 import { IdeaSwitcher } from "@/components/assessment/IdeaSwitcher";
+import { ExportModal } from "../ui/ExportModal";
 import type {
   Idea,
   ChecklistKey,
@@ -35,6 +36,7 @@ export function PresentationPanel({
   chatIsOpen = false
 }: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const agentSettingsId = useId();
 
   // Function to copy text to clipboard
@@ -64,6 +66,11 @@ export function PresentationPanel({
       // Trigger agent to switch to existing idea with name included
       setChatInput(`Switch to working on idea: ${ideaName} (${ideaId})`);
     }
+  };
+
+  // Function to open export modal
+  const handleOpenExportModal = () => {
+    setExportModalOpen(true);
   };
 
   // Check if we have any meaningful content to display
@@ -163,9 +170,24 @@ export function PresentationPanel({
           chatIsOpen ? "md:mr-[540px] md:pr-4" : "md:pr-8"
         }`}
       >
-        <div className="flex items-center gap-2 mb-3">
-          <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
-          <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
+            <h2 className="text-sm md:text-lg font-medium">Idea Assessment</h2>
+          </div>
+          
+          {/* Export Button */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-[#F48120] text-white hover:bg-[#F48120]/90 transition-colors"
+              onClick={handleOpenExportModal}
+              title="Export as image"
+            >
+              <Export size={14} />
+              Export
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -319,6 +341,13 @@ export function PresentationPanel({
             </Card>
           )}
         </div>
+
+        {/* Export Modal */}
+        <ExportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          agentUserId={agentState.userInfo?.id || "anonymous"}
+        />
       </div>
     </div>
   );
