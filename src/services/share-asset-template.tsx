@@ -1,6 +1,12 @@
 import React from "react";
 import type { AppAgentState } from "../agent/AppAgent";
 import type { ShareExportOptions } from "./share-asset-generator";
+import type {
+  Idea,
+  ChecklistKey,
+  ChecklistItem,
+  DerivedScores
+} from "../types/assessment";
 
 export interface ShareAssetTemplateProps {
   agentState: AppAgentState;
@@ -9,8 +15,8 @@ export interface ShareAssetTemplateProps {
 }
 
 /**
- * Share Asset Template
- * Contains all JSX, styling, colors, and appearance logic for PNG exports
+ * IdeaPotential Share Asset Template
+ * Customized for startup idea assessment export
  */
 export function ShareAssetTemplate({
   agentState,
@@ -22,36 +28,95 @@ export function ShareAssetTemplate({
   const isSquare = format === "square";
   const isMobile = format === "mobile";
 
-  // Extract key data from agent state
-  const mode = agentState.mode || "onboarding";
-  const onboardingComplete = agentState.isOnboardingComplete || false;
-  const integrationComplete = agentState.isIntegrationComplete || false;
-  const testCount = agentState.testResults
-    ? Object.keys(agentState.testResults).length
-    : 0;
+  // Check if there's actual assessment data available
+  const hasCurrentIdea = Boolean(agentState?.currentIdea);
+  const hasIdeasArray = Boolean(
+    agentState?.ideas &&
+      Array.isArray(agentState.ideas) &&
+      agentState.ideas.length > 0
+  );
+  const isAssessmentComplete = Boolean(
+    agentState?.assessmentProgress?.isAssessmentComplete
+  );
 
-  // Mode information
-  const modeInfo = {
-    onboarding: {
-      title: "Welcome—let's set you up",
-      description: "Set up the agent's purpose, defaults and operators."
-    },
-    integration: {
-      title: "Validate and connect tools",
-      description: "Connect tools, run checks and document capabilities."
-    },
-    plan: {
-      title: "Think before you act",
-      description: "Analyze context and propose next steps without executing."
-    },
-    act: {
-      title: "Execute with confidence",
-      description: "Execute approved actions with guardrails and visibility."
+  console.log("[ShareAssetTemplate] Assessment status:", {
+    hasCurrentIdea,
+    hasIdeasArray,
+    isAssessmentComplete,
+    currentIdea: agentState?.currentIdea,
+    ideasCount: agentState?.ideas?.length || 0,
+    fullAgentState: agentState
+  });
+
+  // If no assessment data is available, return an error message export instead of crashing
+  if (!hasCurrentIdea && !hasIdeasArray && !isAssessmentComplete) {
+    console.log(
+      "[ShareAssetTemplate] No assessment data found, creating placeholder export"
+    );
+
+    // Create a simple "no assessment" export instead of throwing an error
+    const assessmentData = {
+      title: "No Assessment Available",
+      one_liner: "Complete an idea assessment to generate an export",
+      stage: "none",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      derived: {
+        potential_score: 0,
+        actualization_score: 0,
+        potential_bucket: "unknown",
+        actualization_bucket: "unknown"
+      },
+      checklist: {},
+      recommended_tweak:
+        "Start by assessing a startup idea to see results here."
+    } as unknown as Idea;
+
+    // Continue with the placeholder data
+  } else {
+    // Try to get real assessment data
+    let assessmentData: Idea | null = null;
+
+    if (agentState?.currentIdea) {
+      assessmentData = agentState.currentIdea as unknown as Idea;
+    } else if (
+      agentState?.ideas &&
+      Array.isArray(agentState.ideas) &&
+      agentState.ideas.length > 0
+    ) {
+      assessmentData = agentState.ideas[
+        agentState.ideas.length - 1
+      ] as unknown as Idea;
     }
-  };
 
-  const currentMode =
-    modeInfo[mode as keyof typeof modeInfo] || modeInfo.onboarding;
+    if (!assessmentData) {
+      throw new Error(
+        `Expected assessment data but none found. Check export button visibility logic.`
+      );
+    }
+  }
+
+  // Use the determined assessment data (either real or placeholder)
+  const assessmentData: Idea = hasCurrentIdea
+    ? (agentState.currentIdea as unknown as Idea)
+    : hasIdeasArray
+      ? (agentState.ideas[agentState.ideas.length - 1] as unknown as Idea)
+      : ({
+          title: "No Assessment Available",
+          one_liner: "Complete an idea assessment to generate an export",
+          stage: "none",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          derived: {
+            potential_score: 0,
+            actualization_score: 0,
+            potential_bucket: "unknown",
+            actualization_bucket: "unknown"
+          },
+          checklist: {},
+          recommended_tweak:
+            "Start by assessing a startup idea to see results here."
+        } as unknown as Idea);
 
   // Colors based on theme
   const colors = isDark
@@ -62,8 +127,12 @@ export function ShareAssetTemplate({
         textSecondary: "#a3a3a3",
         accent: "#F48120",
         border: "#404040",
-        success: "#22c55e",
-        warning: "#eab308"
+        blue: {
+          bg: "#1e3a8a20",
+          border: "#1e40af",
+          text: "#93c5fd",
+          textSecondary: "#bfdbfe"
+        }
       }
     : {
         bg: "#ffffff",
@@ -72,27 +141,141 @@ export function ShareAssetTemplate({
         textSecondary: "#525252",
         accent: "#F48120",
         border: "#e5e5e5",
-        success: "#22c55e",
-        warning: "#eab308"
+        blue: {
+          bg: "#dbeafe",
+          border: "#3b82f6",
+          text: "#1e40af",
+          textSecondary: "#1e40af"
+        }
       };
 
-  // Format-specific adjustments
-  const formatConfig = {
-    "square": {
-      headerPadding: "40px",
-      fontSize: { title: "32px", badge: "12px", description: "16px" },
-      spacing: { marginBottom: "30px", gap: "20px" },
-      maxWidth: "700px"
-    },
-    "mobile": {
-      headerPadding: "30px", 
-      fontSize: { title: "28px", badge: "11px", description: "15px" },
-      spacing: { marginBottom: "25px", gap: "18px" },
-      maxWidth: "600px"
-    }
-  };
+  // Format-specific sizing
+  const config = isSquare
+    ? {
+        headerPadding: "40px",
+        fontSize: {
+          title: "28px",
+          subtitle: "14px",
+          description: "16px",
+          small: "12px"
+        },
+        spacing: { gap: "20px", marginBottom: "25px" },
+        maxWidth: "90%"
+      }
+    : {
+        headerPadding: "30px",
+        fontSize: {
+          title: "26px",
+          subtitle: "13px",
+          description: "15px",
+          small: "11px"
+        },
+        spacing: { gap: "18px", marginBottom: "22px" },
+        maxWidth: "85%"
+      };
 
-  const config = formatConfig[format as keyof typeof formatConfig] || formatConfig["square"];
+  // Score dial component (simplified for static export)
+  const ScoreDial = ({
+    scoreType,
+    score,
+    bucket
+  }: {
+    scoreType: "potential" | "actualization";
+    score: number;
+    bucket: string;
+  }) => {
+    const size = isSquare ? 80 : 70;
+    const strokeWidth = 6;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const strokeDasharray = circumference;
+    const strokeDashoffset = circumference - (score / 100) * circumference;
+
+    const getColors = () => {
+      switch (bucket) {
+        case "green":
+          return { stroke: "#10b981", text: "#059669" };
+        case "yellow":
+          return { stroke: "#f59e0b", text: "#d97706" };
+        case "red":
+          return { stroke: "#ef4444", text: "#dc2626" };
+        default:
+          return { stroke: "#6b7280", text: "#6b7280" };
+      }
+    };
+
+    const dialColors = getColors();
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center"
+        }}
+      >
+        <div style={{ display: "flex", position: "relative" }}>
+          <svg
+            width={size}
+            height={size}
+            style={{ transform: "rotate(-90deg)" }}
+          >
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke={isDark ? "#404040" : "#e5e7eb"}
+              strokeWidth={strokeWidth}
+              fill="none"
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke={dialColors.stroke}
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeDasharray={strokeDasharray}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+            />
+          </svg>
+          <div
+            style={{
+              position: "absolute",
+              inset: "0",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                fontSize: isSquare ? "16px" : "14px",
+                fontWeight: "bold",
+                color: dialColors.text
+              }}
+            >
+              {bucket === "unknown" ? "—" : `${Math.round(score)}%`}
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            marginTop: "8px",
+            textAlign: "center",
+            fontSize: config.fontSize.small,
+            color: colors.textSecondary
+          }}
+        >
+          {scoreType === "potential" ? "Potential" : "Actualization"}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -102,161 +285,264 @@ export function ShareAssetTemplate({
         width: "100%",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         backgroundColor: colors.bg,
         fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        padding: config.headerPadding
       }}
     >
-      {/* Header Section */}
+      {/* Header */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "flex-start",
-          width: "90%",
+          alignItems: "center",
+          width: "100%",
           maxWidth: config.maxWidth,
-          background: `linear-gradient(135deg, ${isDark ? "#404040" : "#f5f5f5"}, ${isDark ? "#262626" : "#e5e5e5"})`,
-          borderRadius: "12px",
-          padding: config.headerPadding,
           marginBottom: config.spacing.marginBottom
         }}
       >
-        {/* Mode Badge */}
+        {/* IdeaPotential Brand */}
         <div
           style={{
             display: "flex",
             backgroundColor: colors.accent,
             color: "white",
             padding: "8px 16px",
-            borderRadius: "14px",
-            fontSize: config.fontSize.badge,
+            borderRadius: "20px",
+            fontSize: config.fontSize.small,
             fontWeight: "600",
-            marginBottom: "20px",
-            textTransform: "uppercase"
+            marginBottom: "20px"
           }}
         >
-          MODE • {mode}
+          IDEAPOTENTIAL
         </div>
 
-        {/* Title */}
+        {/* Idea Title & One-liner */}
         <div
           style={{
             display: "flex",
-            fontSize: config.fontSize.title,
-            fontWeight: "bold",
-            color: colors.text,
-            marginBottom: "12px"
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            width: "100%"
           }}
         >
-          {currentMode.title}
-        </div>
+          <h1
+            style={{
+              fontSize: config.fontSize.title,
+              fontWeight: "bold",
+              color: colors.text,
+              marginBottom: "8px",
+              lineHeight: "1.2"
+            }}
+          >
+            {assessmentData.title}
+          </h1>
+          <p
+            style={{
+              fontSize: config.fontSize.subtitle,
+              color: colors.textSecondary,
+              marginBottom: "16px"
+            }}
+          >
+            {assessmentData.one_liner}
+          </p>
 
-        {/* Description */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: config.fontSize.description,
-            color: colors.textSecondary,
-            lineHeight: "1.4"
-          }}
-        >
-          {currentMode.description}
+          <div
+            style={{
+              display: "flex",
+              fontSize: config.fontSize.small,
+              color: colors.textSecondary,
+              marginBottom: "20px"
+            }}
+          >
+            Stage: {assessmentData.stage} • Updated:{" "}
+            {new Date(assessmentData.updated_at).toLocaleDateString()}
+          </div>
         </div>
       </div>
 
-      {/* Stats Section */}
+      {/* Score Dials */}
       <div
         style={{
           display: "flex",
-          width: "90%",
+          justifyContent: "center",
+          gap: isSquare ? "40px" : "30px",
+          marginBottom: config.spacing.marginBottom,
+          width: "100%"
+        }}
+      >
+        <ScoreDial
+          scoreType="potential"
+          score={assessmentData.derived.potential_score}
+          bucket={assessmentData.derived.potential_bucket}
+        />
+        <ScoreDial
+          scoreType="actualization"
+          score={assessmentData.derived.actualization_score}
+          bucket={assessmentData.derived.actualization_bucket}
+        />
+      </div>
+
+      {/* Key Assessment Factors (simplified) */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
           maxWidth: config.maxWidth,
-          gap: config.spacing.gap,
+          backgroundColor: colors.cardBg,
+          border: `1px solid ${colors.border}`,
+          borderRadius: "12px",
+          padding: "20px",
           marginBottom: config.spacing.marginBottom
         }}
       >
-        {/* Onboarding Status */}
-        <div
+        <h3
           style={{
-            flex: 1,
-            backgroundColor: colors.cardBg,
-            border: `1px solid ${colors.border}`,
-            borderRadius: "8px",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column"
+            fontSize: config.fontSize.subtitle,
+            fontWeight: "600",
+            color: colors.text,
+            marginBottom: "16px",
+            textAlign: "center"
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              fontSize: "12px",
-              color: colors.textSecondary,
-              fontWeight: "600",
-              marginBottom: "8px"
-            }}
-          >
-            ONBOARDING
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: "16px",
-              color: colors.text,
-              fontWeight: "600"
-            }}
-          >
-            {onboardingComplete ? "Complete" : "In progress"}
-          </div>
-        </div>
+          Assessment Highlights
+        </h3>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isSquare ? "row" : "column",
+            gap: "12px",
+            justifyContent: "space-between"
+          }}
+        >
+          {/* Show top few factors with scores */}
+          {Object.entries(assessmentData.checklist || {}).length > 0 ? (
+            Object.entries(assessmentData.checklist || {})
+              .slice(0, isSquare ? 4 : 6)
+              .map(([key, item]) => {
+                const getFactorLabel = (key: string) => {
+                  const labels: Record<string, string> = {
+                    problem_clarity: "Problem Clarity",
+                    market_pain_mentions: "Market Pain",
+                    competitive_moat: "Competitive Moat",
+                    team_solution_fit: "Team-Solution Fit",
+                    solution_evidence: "Solution Evidence",
+                    early_demand: "Early Demand"
+                  };
+                  return (
+                    labels[key] ||
+                    key
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())
+                  );
+                };
 
-        {/* Integration Status */}
-        <div
-          style={{
-            flex: 1,
-            backgroundColor: colors.cardBg,
-            border: `1px solid ${colors.border}`,
-            borderRadius: "8px",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column"
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              fontSize: "12px",
-              color: colors.textSecondary,
-              fontWeight: "600",
-              marginBottom: "8px"
-            }}
-          >
-            INTEGRATION
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: "16px",
-              color: colors.text,
-              fontWeight: "600"
-            }}
-          >
-            {integrationComplete ? "Complete" : `${testCount} tests`}
-          </div>
+                const score = item?.score;
+                const hasScore = score !== null && score !== undefined;
+
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: config.fontSize.small,
+                      color: colors.text
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: hasScore
+                          ? score >= 7
+                            ? "#10b981"
+                            : score >= 4
+                              ? "#f59e0b"
+                              : "#ef4444"
+                          : colors.border
+                      }}
+                    />
+                    <span>{getFactorLabel(key)}</span>
+                    {hasScore && (
+                      <span style={{ color: colors.textSecondary }}>
+                        {score}/10
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                fontSize: config.fontSize.small,
+                color: colors.textSecondary,
+                textAlign: "center",
+                fontStyle: "italic"
+              }}
+            >
+              Assessment factors will appear here after completing an idea
+              evaluation
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Recommended Next Step */}
+      {assessmentData.recommended_tweak && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+            maxWidth: config.maxWidth,
+            backgroundColor: colors.blue.bg,
+            border: `1px solid ${colors.blue.border}`,
+            borderRadius: "12px",
+            padding: "20px",
+            marginBottom: config.spacing.marginBottom
+          }}
+        >
+          <h4
+            style={{
+              fontSize: config.fontSize.subtitle,
+              fontWeight: "600",
+              color: colors.blue.text,
+              marginBottom: "8px"
+            }}
+          >
+            Recommended Next Step
+          </h4>
+          <p
+            style={{
+              fontSize: config.fontSize.description,
+              color: colors.blue.textSecondary,
+              lineHeight: "1.4"
+            }}
+          >
+            {assessmentData.recommended_tweak}
+          </p>
+        </div>
+      )}
 
       {/* Footer */}
       <div
         style={{
           display: "flex",
-          fontSize: "12px",
+          fontSize: config.fontSize.small,
           color: colors.textSecondary,
           marginTop: "auto",
-          paddingBottom: "20px"
+          paddingTop: "20px"
         }}
       >
-        Generated by AI@YourService • {new Date().toLocaleDateString()}
+        ideapotential.com • {new Date().toLocaleDateString()}
       </div>
     </div>
   );
