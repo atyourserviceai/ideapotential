@@ -17,8 +17,10 @@ export function ShareAssetTemplate({
   options,
   dimensions
 }: ShareAssetTemplateProps) {
-  const { theme } = options;
+  const { theme, format } = options;
   const isDark = theme === "dark";
+  const isSquare = format === "square";
+  const isMobile = format === "mobile";
 
   // Extract key data from agent state
   const mode = agentState.mode || "onboarding";
@@ -74,6 +76,24 @@ export function ShareAssetTemplate({
         warning: "#eab308"
       };
 
+  // Format-specific adjustments
+  const formatConfig = {
+    "square": {
+      headerPadding: "40px",
+      fontSize: { title: "32px", badge: "12px", description: "16px" },
+      spacing: { marginBottom: "30px", gap: "20px" },
+      maxWidth: "700px"
+    },
+    "mobile": {
+      headerPadding: "30px", 
+      fontSize: { title: "28px", badge: "11px", description: "15px" },
+      spacing: { marginBottom: "25px", gap: "18px" },
+      maxWidth: "600px"
+    }
+  };
+
+  const config = formatConfig[format as keyof typeof formatConfig] || formatConfig["square"];
+
   return (
     <div
       style={{
@@ -95,11 +115,11 @@ export function ShareAssetTemplate({
           flexDirection: "column",
           alignItems: "flex-start",
           width: "90%",
-          maxWidth: "800px",
+          maxWidth: config.maxWidth,
           background: `linear-gradient(135deg, ${isDark ? "#404040" : "#f5f5f5"}, ${isDark ? "#262626" : "#e5e5e5"})`,
           borderRadius: "12px",
-          padding: "40px",
-          marginBottom: "30px"
+          padding: config.headerPadding,
+          marginBottom: config.spacing.marginBottom
         }}
       >
         {/* Mode Badge */}
@@ -110,7 +130,7 @@ export function ShareAssetTemplate({
             color: "white",
             padding: "8px 16px",
             borderRadius: "14px",
-            fontSize: "12px",
+            fontSize: config.fontSize.badge,
             fontWeight: "600",
             marginBottom: "20px",
             textTransform: "uppercase"
@@ -123,7 +143,7 @@ export function ShareAssetTemplate({
         <div
           style={{
             display: "flex",
-            fontSize: "36px",
+            fontSize: config.fontSize.title,
             fontWeight: "bold",
             color: colors.text,
             marginBottom: "12px"
@@ -136,7 +156,7 @@ export function ShareAssetTemplate({
         <div
           style={{
             display: "flex",
-            fontSize: "16px",
+            fontSize: config.fontSize.description,
             color: colors.textSecondary,
             lineHeight: "1.4"
           }}
@@ -150,9 +170,9 @@ export function ShareAssetTemplate({
         style={{
           display: "flex",
           width: "90%",
-          maxWidth: "800px",
-          gap: "20px",
-          marginBottom: "30px"
+          maxWidth: config.maxWidth,
+          gap: config.spacing.gap,
+          marginBottom: config.spacing.marginBottom
         }}
       >
         {/* Onboarding Status */}

@@ -1352,14 +1352,14 @@ export class AppAgent extends AIChatAgent<Env> {
       try {
         const body = (await request.json()) as {
           type?: "png" | "svg";
-          format?: "social" | "document" | "mobile";
+          format?: "square" | "mobile";
           theme?: "light" | "dark";
           includeDebug?: boolean;
         };
 
         const {
           type = "png",
-          format = "social",
+          format = "square",
           theme = "light",
           includeDebug = false
         } = body;
