@@ -38,9 +38,10 @@ export class ShareAssetGenerator {
   }
 
   private getFormatDimensions(format: string) {
+    // Use higher resolution for better quality (2x scaling for crisp text)
     const dimensions = {
-      square: { width: 1080, height: 1080 }, // Square format for Instagram, LinkedIn, etc.
-      mobile: { width: 750, height: null } // Mobile width, height will be dynamic
+      square: { width: 2160, height: 2160 }, // 2x resolution for crisp text and graphics
+      mobile: { width: 1500, height: null } // 2x mobile width, height will be dynamic
     };
     return (
       dimensions[format as keyof typeof dimensions] || dimensions["square"]
@@ -82,7 +83,7 @@ export class ShareAssetGenerator {
       if (options.format === "mobile" && dimensions.height === null) {
         // Estimate height based on content - this is a rough calculation
         // In practice, the ImageResponse will auto-size to content
-        finalDimensions = { width: dimensions.width, height: 1600 }; // Default mobile height
+        finalDimensions = { width: dimensions.width, height: 3200 }; // 2x mobile height for crisp rendering
       }
 
       const imageResponse = await this.generateImageResponse(
