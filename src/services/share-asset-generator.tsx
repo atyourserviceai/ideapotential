@@ -1,4 +1,3 @@
-import React from "react";
 import type { AppAgentState } from "../agent/AppAgent";
 import { ShareAssetTemplate } from "./share-asset-template";
 
@@ -19,12 +18,6 @@ export interface ShareResult {
  * Creates shareable PNG images from agent state
  */
 export class ShareAssetGenerator {
-  private env: Env;
-
-  constructor(env: Env) {
-    this.env = env;
-  }
-
   async generatePNGExport(
     agentState: AppAgentState,
     options: ShareExportOptions = {
@@ -38,14 +31,11 @@ export class ShareAssetGenerator {
   }
 
   private getFormatDimensions(format: string) {
-    // Use higher resolution for better quality (2x scaling for crisp text)
     const dimensions = {
-      square: { width: 2160, height: 2160 }, // 2x resolution for crisp text and graphics
-      mobile: { width: 1500, height: null } // 2x mobile width, height will be dynamic
+      square: { width: 1080, height: 1080 }, // Square format for Instagram, LinkedIn, etc.
+      mobile: { width: 750, height: null } // Mobile width, height will be dynamic
     };
-    return (
-      dimensions[format as keyof typeof dimensions] || dimensions["square"]
-    );
+    return dimensions[format as keyof typeof dimensions] || dimensions.square;
   }
 
   private async createPNGContent(
@@ -56,7 +46,7 @@ export class ShareAssetGenerator {
     try {
       // Use workers-og ImageResponse designed for Cloudflare Workers
       // Handle WASM "Already initialized" error that occurs in development with hot reloads
-      let ImageResponse;
+      let ImageResponse: any;
       try {
         const workersOg = await import("workers-og");
         ImageResponse = workersOg.ImageResponse;
@@ -83,7 +73,7 @@ export class ShareAssetGenerator {
       if (options.format === "mobile" && dimensions.height === null) {
         // Estimate height based on content - this is a rough calculation
         // In practice, the ImageResponse will auto-size to content
-        finalDimensions = { width: dimensions.width, height: 3200 }; // 2x mobile height for crisp rendering
+        finalDimensions = { width: dimensions.width, height: 1600 }; // Default mobile height
       }
 
       const imageResponse = await this.generateImageResponse(
@@ -118,9 +108,8 @@ export class ShareAssetGenerator {
       ),
       {
         width: dimensions.width,
-        height: dimensions.height,
-        // Disable external font loading to avoid Google Fonts dependency
-        fonts: []
+        height: dimensions.height
+        // Use system fonts - @vercel/og has built-in font support
       }
     );
   }
