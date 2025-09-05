@@ -6,7 +6,6 @@ import type { AgentContext, Connection, Schedule } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
 import {
   createDataStreamResponse,
-  extractReasoningMiddleware,
   generateId,
   type StreamTextOnFinishCallback,
   streamText,
@@ -31,7 +30,7 @@ import {
   importAgentData
 } from "./utils/export-import-utils";
 import { processToolCalls } from "./utils/tool-utils";
-import { ShareAssetGenerator } from "../services/share-asset-generator.tsx";
+import { ShareAssetGenerator } from "../services/share-asset-generator";
 
 // AI @ Your Service Gateway configuration
 const getOpenAI = (env: Env, apiKey?: string) => {
@@ -628,43 +627,12 @@ export class AppAgent extends AIChatAgent<Env> {
               );
             }
 
-            // Create reasoning middleware to handle thinking tokens properly
-            const _reasoningMiddleware = extractReasoningMiddleware({
-              tagName: "thinking", // Common tag for thinking tokens
-              onReasoningStart: () => {
-                console.log(
-                  "[AppAgent] 🧠 Reasoning started - setting thinking state"
-                );
-                // Signal that thinking has started
-                dataStream.writeData({
-                  type: "thinking-tokens",
-                  content: "" // Empty content to trigger thinking state
-                });
-              },
-              onReasoningChunk: (chunk: string) => {
-                console.log(
-                  "[AppAgent] 🧠 Reasoning chunk received:",
-                  `${chunk.substring(0, 50)}...`
-                );
-                // Stream thinking tokens in real-time
-                dataStream.writeData({
-                  type: "thinking-tokens",
-                  content: chunk
-                });
-              },
-              onReasoningEnd: () => {
-                console.log("[AppAgent] 🧠 Reasoning complete");
-                // Could send a signal that thinking is complete
-              }
-            });
-
             // Stream the AI response
             result = streamText({
               maxSteps: 10,
               messages: filteredMessages,
               model,
               temperature: 1,
-              middleware: [_reasoningMiddleware],
               onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
 
@@ -1386,7 +1354,6 @@ export class AppAgent extends AIChatAgent<Env> {
         };
 
         const {
-          type = "png",
           format = "square",
           theme = "light",
           includeDebug = false
@@ -1396,7 +1363,7 @@ export class AppAgent extends AIChatAgent<Env> {
         const state = this.state as AppAgentState;
 
         // Create export generator service
-        const exportGenerator = new ShareAssetGenerator(this.env);
+        const exportGenerator = new ShareAssetGenerator();
 
         // Generate PNG export
         const pngBuffer = await exportGenerator.generatePNGExport(state, {
@@ -1405,7 +1372,7 @@ export class AppAgent extends AIChatAgent<Env> {
           includeDebug
         });
 
-        return new Response(pngBuffer, {
+        return new Response(Buffer.from(pngBuffer), {
           headers: {
             "Content-Type": "image/png",
             "Content-Disposition": `attachment; filename="agent-export-${format}-${theme}.png"`
