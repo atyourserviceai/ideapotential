@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  X,
-  Download,
-  Image,
-  FileText,
-  Code,
-  Upload
-} from "@phosphor-icons/react";
+import { X, Download, Image, Upload } from "@phosphor-icons/react";
 import { useCurrentProjectAuth } from "../../hooks/useAgentAuth";
 
 export interface ExportModalProps {
@@ -125,11 +118,12 @@ export function ExportModal({
 
     // Cleanup URLs when component unmounts or modal closes
     return () => {
+      // Clean up the current previewUrls when effect reruns or component unmounts
       previewUrls.forEach((url) => {
         window.URL.revokeObjectURL(url);
       });
     };
-  }, [isOpen, theme, agentConfig?.name]);
+  }, [isOpen, theme, agentConfig?.name, previewUrls]);
 
   if (!isOpen) return null;
 
@@ -149,7 +143,10 @@ export function ExportModal({
         }
       );
 
-      const result = await response.json();
+      const result = (await response.json()) as {
+        message?: string;
+        error?: string;
+      };
 
       if (response.ok) {
         setImportResult({

@@ -163,12 +163,12 @@ export function ChatMessage({
             </div>
           ) : (
             <div className="relative group">
-              <Card
+              <div
                 className={`p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 ${
                   isUser
                     ? "rounded-br-none"
                     : "rounded-bl-none border-assistant-border"
-                } ${isScheduledMessage ? "border-accent/50" : ""} relative`}
+                } ${isScheduledMessage ? "border-accent/50" : ""} relative border border-neutral-200 dark:border-neutral-700 shadow-sm`}
                 // Double-click to edit user messages
                 onDoubleClick={
                   isUser ? () => onStartEditing(message) : undefined
@@ -191,7 +191,7 @@ export function ChatMessage({
                     )}
                   />
                 </div>
-              </Card>
+              </div>
 
               {/* Thinking tokens display for assistant messages */}
               {!isUser && thinkingTokens && (

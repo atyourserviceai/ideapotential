@@ -1,4 +1,3 @@
-import React from "react";
 import type { AppAgentState } from "../agent/AppAgent";
 import type { ShareExportOptions } from "./share-asset-generator";
 import type {
@@ -30,7 +29,6 @@ export function ShareAssetTemplate({
   const { theme, format } = options;
   const isDark = theme === "dark";
   const isSquare = format === "square";
-  const isMobile = format === "mobile";
 
   console.log("[ShareAssetTemplate] Generating export with options:", options);
   console.log("[ShareAssetTemplate] Agent state structure:", {

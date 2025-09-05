@@ -97,6 +97,8 @@ export function ExportScoreDial({
             position: "absolute",
             transform: "rotate(-90deg)"
           }}
+          role="img"
+          aria-label={`${scoreType} score: ${targetPercentage}`}
         >
           <circle
             cx={size / 2}

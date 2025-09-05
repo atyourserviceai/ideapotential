@@ -644,7 +644,7 @@ export class AppAgent extends AIChatAgent<Env> {
               onReasoningChunk: (chunk: string) => {
                 console.log(
                   "[AppAgent] 🧠 Reasoning chunk received:",
-                  chunk.substring(0, 50) + "..."
+                  `${chunk.substring(0, 50)}...`
                 );
                 // Stream thinking tokens in real-time
                 dataStream.writeData({
