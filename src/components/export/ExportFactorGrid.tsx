@@ -21,13 +21,13 @@ const FACTOR_INFO: Record<
     blockSet: "Potential"
   },
   market_pain_mentions: {
-    name: "Market-Pain Mentions", 
+    name: "Market-Pain Mentions",
     shortName: "Market Pain",
     blockSet: "Potential"
   },
   outcome_gap: {
     name: "Outcome Satisfaction Gap",
-    shortName: "Outcome Gap", 
+    shortName: "Outcome Gap",
     blockSet: "Potential"
   },
   competitive_moat: {
@@ -46,7 +46,7 @@ const FACTOR_INFO: Record<
     blockSet: "Potential"
   },
   team_market_fit: {
-    name: "Team–Market Fit", 
+    name: "Team–Market Fit",
     shortName: "Team-Market",
     blockSet: "Potential"
   },
@@ -101,21 +101,25 @@ export function ExportFactorGrid({
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         {/* Potential Section */}
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ 
-            fontSize: "20px", 
-            fontWeight: "700", 
-            color: "#374151",
-            margin: "0",
-            display: "flex"
-          }}>
+          <div
+            style={{
+              fontSize: "20px",
+              fontWeight: "700",
+              color: "#374151",
+              margin: "0",
+              display: "flex"
+            }}
+          >
             Potential (7 factors)
           </div>
-          <div style={{ 
-            display: "flex", 
-            flexWrap: "wrap", 
-            gap: "8px",
-            alignItems: "center"
-          }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              alignItems: "center"
+            }}
+          >
             {potentialFactors.map((key) => {
               const item = checklist[key];
               const score = item?.score;
@@ -138,7 +142,13 @@ export function ExportFactorGrid({
                   >
                     {getScoreIcon(score)}
                   </div>
-                  <div style={{ color: "#6b7280", fontSize: "14px", display: "flex" }}>
+                  <div
+                    style={{
+                      color: "#6b7280",
+                      fontSize: "14px",
+                      display: "flex"
+                    }}
+                  >
                     {FACTOR_INFO[key].shortName}
                   </div>
                 </div>
@@ -149,21 +159,25 @@ export function ExportFactorGrid({
 
         {/* Actualization Section */}
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ 
-            fontSize: "20px", 
-            fontWeight: "700", 
-            color: "#374151",
-            margin: "0",
-            display: "flex"
-          }}>
+          <div
+            style={{
+              fontSize: "20px",
+              fontWeight: "700",
+              color: "#374151",
+              margin: "0",
+              display: "flex"
+            }}
+          >
             Actualization (3 factors)
           </div>
-          <div style={{ 
-            display: "flex", 
-            flexWrap: "wrap", 
-            gap: "8px",
-            alignItems: "center"
-          }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              alignItems: "center"
+            }}
+          >
             {actualizationFactors.map((key) => {
               const item = checklist[key];
               const score = item?.score;
@@ -186,7 +200,13 @@ export function ExportFactorGrid({
                   >
                     {getScoreIcon(score)}
                   </div>
-                  <div style={{ color: "#6b7280", fontSize: "14px", display: "flex" }}>
+                  <div
+                    style={{
+                      color: "#6b7280",
+                      fontSize: "14px",
+                      display: "flex"
+                    }}
+                  >
                     {FACTOR_INFO[key].shortName}
                   </div>
                 </div>
@@ -203,20 +223,24 @@ export function ExportFactorGrid({
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Potential Section */}
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ 
-          fontSize: "24px", 
-          fontWeight: "700", 
-          color: "#374151",
-          marginBottom: "16px",
-          display: "flex"
-        }}>
+        <div
+          style={{
+            fontSize: "24px",
+            fontWeight: "700",
+            color: "#374151",
+            marginBottom: "16px",
+            display: "flex"
+          }}
+        >
           Potential Assessment (7 factors)
         </div>
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          gap: "12px"
-        }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px"
+          }}
+        >
           {potentialFactors.map((key) => {
             const item = checklist[key];
             const score = item?.score;
@@ -250,23 +274,30 @@ export function ExportFactorGrid({
                 >
                   {score || "?"}
                 </div>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ 
-                    fontSize: "16px", 
-                    fontWeight: "600", 
-                    color: "#374151",
-                    display: "flex"
-                  }}>
+                <div
+                  style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                >
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "#374151",
+                      display: "flex"
+                    }}
+                  >
                     {FACTOR_INFO[key].name}
                   </div>
                   {evidenceCount > 0 && (
-                    <div style={{ 
-                      fontSize: "12px", 
-                      color: "#6b7280",
-                      marginTop: "2px",
-                      display: "flex"
-                    }}>
-                      {evidenceCount} evidence item{evidenceCount !== 1 ? "s" : ""}
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                        marginTop: "2px",
+                        display: "flex"
+                      }}
+                    >
+                      {evidenceCount} evidence item
+                      {evidenceCount !== 1 ? "s" : ""}
                     </div>
                   )}
                 </div>
@@ -278,20 +309,24 @@ export function ExportFactorGrid({
 
       {/* Actualization Section */}
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ 
-          fontSize: "24px", 
-          fontWeight: "700", 
-          color: "#374151",
-          marginBottom: "16px",
-          display: "flex"
-        }}>
+        <div
+          style={{
+            fontSize: "24px",
+            fontWeight: "700",
+            color: "#374151",
+            marginBottom: "16px",
+            display: "flex"
+          }}
+        >
           Actualization Assessment (3 factors)
         </div>
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          gap: "12px"
-        }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px"
+          }}
+        >
           {actualizationFactors.map((key) => {
             const item = checklist[key];
             const score = item?.score;
@@ -311,7 +346,7 @@ export function ExportFactorGrid({
                 <div
                   style={{
                     width: "24px",
-                    height: "24px", 
+                    height: "24px",
                     borderRadius: "50%",
                     backgroundColor: getScoreColor(score),
                     display: "flex",
@@ -325,23 +360,30 @@ export function ExportFactorGrid({
                 >
                   {score || "?"}
                 </div>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ 
-                    fontSize: "16px", 
-                    fontWeight: "600", 
-                    color: "#374151",
-                    display: "flex"
-                  }}>
+                <div
+                  style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                >
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "#374151",
+                      display: "flex"
+                    }}
+                  >
                     {FACTOR_INFO[key].name}
                   </div>
                   {evidenceCount > 0 && (
-                    <div style={{ 
-                      fontSize: "12px", 
-                      color: "#6b7280",
-                      marginTop: "2px",
-                      display: "flex"
-                    }}>
-                      {evidenceCount} evidence item{evidenceCount !== 1 ? "s" : ""}
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                        marginTop: "2px",
+                        display: "flex"
+                      }}
+                    >
+                      {evidenceCount} evidence item
+                      {evidenceCount !== 1 ? "s" : ""}
                     </div>
                   )}
                 </div>

@@ -11,13 +11,13 @@ export function ExportScoreDial({
   scoreType,
   size = 200
 }: ExportScoreDialProps) {
-  const targetPercentage = 
-    scoreType === "potential" 
-      ? derived.potential_score 
+  const targetPercentage =
+    scoreType === "potential"
+      ? derived.potential_score
       : derived.actualization_score;
-  const bucket = 
-    scoreType === "potential" 
-      ? derived.potential_bucket 
+  const bucket =
+    scoreType === "potential"
+      ? derived.potential_bucket
       : derived.actualization_bucket;
 
   // Calculate circle properties with higher resolution scaling
@@ -25,7 +25,8 @@ export function ExportScoreDial({
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (targetPercentage / 100) * circumference;
+  const strokeDashoffset =
+    circumference - (targetPercentage / 100) * circumference;
 
   // Color based on bucket
   const getColors = () => {
@@ -33,7 +34,7 @@ export function ExportScoreDial({
       case "green":
         return {
           stroke: "#10b981", // emerald-500
-          bg: "#d1fae5", // emerald-100  
+          bg: "#d1fae5", // emerald-100
           text: "#047857" // emerald-700
         };
       case "yellow":
@@ -70,7 +71,7 @@ export function ExportScoreDial({
   const smallFontSize = size / 12;
 
   return (
-    <div 
+    <div
       style={{
         display: "flex",
         flexDirection: "column",
