@@ -89,47 +89,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [hasHydrated, setHasHydrated] = useState<boolean>(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
-  // Function to sync token with agent database
-  const syncTokenWithAgent = useCallback(async (authData: AuthMethod) => {
-    if (!authData.userInfo?.id || !authData.apiKey) return;
-
-    try {
-      console.log(
-        `[Auth] Syncing token with agent for user: ${authData.userInfo.id}`
-      );
-
-      const response = await fetch(
-        `/agents/app-agent/${authData.userInfo.id}/store-user-info`,
-        {
-          body: JSON.stringify({
-            api_key: authData.apiKey,
-            credits: authData.userInfo.credits,
-            email: authData.userInfo.email,
-            payment_method: "credits", // Default value
-            user_id: authData.userInfo.id
-          }),
-          headers: {
-            Authorization: `Bearer ${authData.apiKey}`,
-            "Content-Type": "application/json"
-          },
-          method: "POST"
-        }
-      );
-
-      if (response.ok) {
-        console.log(
-          `[Auth] ✅ Token synced with agent for user: ${authData.userInfo.id}`
-        );
-      } else {
-        console.warn(
-          "[Auth] Failed to sync token with agent:",
-          response.status
-        );
-      }
-    } catch (error) {
-      console.warn("[Auth] Error syncing token with agent:", error);
-    }
-  }, []);
+  // Note: Agent sync moved to project-specific components to avoid 
+  // auth components needing to know about project structure
 
   // Client-side hydration effect - prevents auth flash only on client
   useEffect(() => {
@@ -193,10 +154,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               });
 
               if (response.ok) {
-                // Token is valid, use the stored auth and sync with agent
+                // Token is valid, use the stored auth
                 setAuthMethod(parsedAuth);
-                // Defer syncing with agent until after hydration to avoid SSR/client divergence
-                queueMicrotask(() => void syncTokenWithAgent(parsedAuth));
               } else {
                 // Token is invalid, clear it and show sign-in with message
                 console.log("Stored token is invalid, clearing auth");
@@ -223,7 +182,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     init();
-  }, [hasHydrated, syncTokenWithAgent]);
+  }, [hasHydrated]);
 
   const login = async () => {
     try {
@@ -248,41 +207,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = async () => {
-    // Capture current auth method before clearing it
-    const currentAuth = authMethod;
-
-    // Clear local storage and state first
+    // Clear local storage and state
     setAuthMethod(null);
     localStorage.removeItem("auth_method");
     localStorage.removeItem("oauth_state");
 
-    // Also clear the agent's cached user data if we have valid auth info
-    if (currentAuth?.userInfo?.id && currentAuth?.apiKey) {
-      try {
-        console.log("[Auth] Clearing agent cached data on logout...");
-        const clearResponse = await fetch(
-          `/agents/app-agent/${currentAuth.userInfo.id}/clear-user-info`,
-          {
-            headers: {
-              Authorization: `Bearer ${currentAuth.apiKey}`,
-              "Content-Type": "application/json"
-            },
-            method: "POST"
-          }
-        );
-
-        if (clearResponse.ok) {
-          console.log("[Auth] Successfully cleared agent cached data");
-        } else {
-          console.warn(
-            "[Auth] Failed to clear agent cached data:",
-            clearResponse.status
-          );
-        }
-      } catch (error) {
-        console.warn("[Auth] Error clearing agent cached data:", error);
-      }
-    }
+    // Note: Agent cached data will be cleared by individual project components as needed
   };
 
   const switchToBYOK = (keys: { openai?: string; anthropic?: string }) => {
