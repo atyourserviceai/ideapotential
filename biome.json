@@ -39,8 +39,7 @@
         "noExplicitAny": "off"
       },
       "correctness": {
-        "noUnusedFunctionParameters": "off",
-        "noUnusedVariables": "off"
+        "noUnusedFunctionParameters": "off"
       },
       "a11y": {
         "useButtonType": "off",

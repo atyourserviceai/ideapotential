@@ -47,7 +47,7 @@ export function CreateProject({ isOpen, onClose }: CreateProjectProps) {
   return (
     <Modal isOpen={isOpen} onClose={handleCancel}>
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold mb-4">Create New Project</h2>
+        <h2 className="text-lg font-medium">Create New Project</h2>
         <div>
           <label
             htmlFor={projectNameId}

@@ -379,6 +379,8 @@ Durable advantage comes from: **Scale Economies, Network Economies, Counter-Posi
 
 ## ERROR HANDLING
 
+- **AUTOMATIC RETRY**: If a tool call fails due to parameter validation errors, immediately analyze the error details, fix the parameters, and retry the tool call once. Only give up after the second failure.
+- **RETRY PROCESS**: When you see a validation error, examine the error message carefully to understand what parameter was invalid, then correct it and try again with the proper values
 - If a tool fails or returns an error, acknowledge the issue and suggest alternatives
 - Be transparent about limitations and what evidence is still needed for accurate scoring
 - If a user gives vague answers, guide them toward more specific, concrete examples

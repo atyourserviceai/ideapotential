@@ -320,7 +320,18 @@ export class AppAgent extends AIChatAgent<Env> {
   constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
 
-    console.log("[AppAgent] Initialized for project-specific instance");
+    // Validate that this is a project-specific agent instance
+    const agentName = ctx.id.toString();
+    if (!agentName.includes("-") || agentName.split("-").length < 2) {
+      const errorMessage = `Invalid agent instance: Agent name '${agentName}' must follow project-specific format '{userId}-{projectName}'. Non-project-specific agents are not supported.`;
+      console.error("[AppAgent]", errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    const [userId, projectName] = agentName.split("-", 2);
+    console.log(
+      `[AppAgent] Initialized for project-specific instance - User: ${userId}, Project: ${projectName}`
+    );
 
     // Load initial state and ensure schema
     const state = this.state as AppAgentState;
@@ -834,6 +845,7 @@ export class AppAgent extends AIChatAgent<Env> {
     const url = new URL(request.url);
 
     console.log("Incoming agent request", {
+      method: request.method,
       pathname: url.pathname,
       url: url.toString()
     });
@@ -1348,7 +1360,7 @@ export class AppAgent extends AIChatAgent<Env> {
       try {
         const body = (await request.json()) as {
           type?: "png" | "svg";
-          format?: "square" | "mobile";
+          format?: "social" | "document" | "mobile";
           theme?: "light" | "dark";
           includeDebug?: boolean;
         };
