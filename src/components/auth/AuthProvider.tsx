@@ -207,12 +207,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = async () => {
-    // Clear local storage and state
+    // Capture current auth method before clearing it
+    const currentAuth = authMethod;
+
+    // Clear local storage and state first
     setAuthMethod(null);
     localStorage.removeItem("auth_method");
     localStorage.removeItem("oauth_state");
 
-    // Note: Agent cached data will be cleared by individual project components as needed
+    // Clear JWT token from UserDO for security
+    if (currentAuth?.userInfo?.id) {
+      try {
+        console.log("[Auth] Clearing JWT token from UserDO on logout...");
+        const clearResponse = await fetch("/api/clear-jwt", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentAuth.userInfo.id
+          })
+        });
+
+        if (clearResponse.ok) {
+          console.log("[Auth] ✅ JWT token cleared from UserDO successfully");
+        } else {
+          console.warn(
+            "[Auth] Failed to clear JWT from UserDO:",
+            clearResponse.status
+          );
+        }
+      } catch (error) {
+        console.warn("[Auth] Error clearing JWT from UserDO:", error);
+      }
+    }
   };
 
   const switchToBYOK = (keys: { openai?: string; anthropic?: string }) => {
