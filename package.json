@@ -11,6 +11,7 @@
     "deploy": "react-router build && wrangler deploy",
     "deploy:staging": "CLOUDFLARE_ENV=staging pnpm run deploy",
     "deploy:production": "CLOUDFLARE_ENV=production pnpm run deploy",
+    "kill-ports": "lsof -ti:5773 | xargs -r kill -9 && lsof -ti:9829 | xargs -r kill -9 && echo 'Killed processes on ports 5773 and 9829' || echo 'No processes found on ports 5773 and 9829'",
     "logs:deployed": "wrangler tail",
     "logs:staging": "wrangler tail --env staging",
     "logs:production": "wrangler tail --env production",
