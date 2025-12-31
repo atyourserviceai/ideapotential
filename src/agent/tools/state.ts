@@ -278,8 +278,7 @@ export const setMode = tool({
   parameters: z.object({
     force: z
       .boolean()
-      .optional()
-      .describe("Force the mode change even if conditions aren't met"),
+      .describe("Force the mode change even if conditions are not met"),
     mode: z
       .enum(["onboarding", "integration", "plan", "act"])
       .describe("The mode to switch to")

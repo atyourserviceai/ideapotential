@@ -51,10 +51,10 @@ export const recordTestResult = tool({
     }
   },
   parameters: z.object({
-    error: z.string().optional().describe("Error message if the test failed"),
-    input: z.unknown().optional().describe("Input provided to the tool"),
-    notes: z.string().optional().describe("Additional notes about the test"),
-    output: z.unknown().optional().describe("Output received from the tool"),
+    error: z.string().describe("Error message if the test failed, empty string if passed"),
+    input: z.string().describe("JSON string of input provided to the tool"),
+    notes: z.string().describe("Additional notes about the test"),
+    output: z.string().describe("JSON string of output received from the tool"),
     status: z.enum(["passed", "failed", "skipped"]).describe("Test result"),
     toolName: z.string().describe("Name of the tool that was tested")
   })
@@ -101,11 +101,10 @@ export const documentTool = tool({
   },
   parameters: z.object({
     description: z.string().describe("Description of what the tool does"),
-    examples: z.array(z.string()).optional().describe("Usage examples"),
-    parameters: z.record(z.unknown()).describe("Tool parameters schema"),
+    examples: z.array(z.string()).describe("Usage examples"),
+    parameters: z.string().describe("JSON string of tool parameters schema"),
     status: z
       .enum(["working", "issues", "unknown"])
-      .optional()
       .describe("Current status of the tool"),
     toolName: z.string().describe("Name of the tool to document")
   })
@@ -240,7 +239,6 @@ export const completeIntegrationTesting = tool({
   parameters: z.object({
     force: z
       .boolean()
-      .optional()
       .describe("Force completion even if tests failed")
   })
 });
@@ -265,8 +263,7 @@ export const testErrorTool = tool({
   parameters: z.object({
     errorType: z
       .enum(["simple", "timeout", "network"])
-      .optional()
-      .default("simple"),
-    message: z.string().optional().default("Test error message")
+      .describe("Type of error to generate"),
+    message: z.string().describe("Error message to use")
   })
 });

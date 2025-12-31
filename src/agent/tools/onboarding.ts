@@ -65,20 +65,11 @@ export const saveSettings = tool({
     }
   },
   parameters: z.object({
-    adminContactEmail: z
-      .string()
-      .optional()
-      .describe("Email of the admin contact"),
-    adminContactName: z
-      .string()
-      .optional()
-      .describe("Name of the admin contact"),
-    language: z.string().optional().describe("Agent language preference"),
-    operatorEmail: z
-      .string()
-      .optional()
-      .describe("Email of the primary operator"),
-    operatorName: z.string().optional().describe("Name of the primary operator")
+    adminContactEmail: z.string().describe("Email of the admin contact"),
+    adminContactName: z.string().describe("Name of the admin contact"),
+    language: z.string().describe("Agent language preference"),
+    operatorEmail: z.string().describe("Email of the primary operator"),
+    operatorName: z.string().describe("Name of the primary operator")
   })
 });
 

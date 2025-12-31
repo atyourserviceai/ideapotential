@@ -21,7 +21,7 @@ export const messagingTools = {
     },
     parameters: z.object({
       body: z.string().describe("Body of the email"),
-      from: z.string().optional().describe("Email address of the sender"),
+      from: z.string().describe("Email address of the sender"),
       subject: z.string().describe("Subject of the email"),
       to: z.string().describe("Email address of the recipient")
     })
@@ -75,14 +75,12 @@ export const suggestActions = tool({
         z.object({
           isOther: z
             .boolean()
-            .optional()
             .describe(
-              "Whether this is an 'Other' option that should focus the input field"
+              "Whether this is an Other option that should focus the input field"
             ),
           label: z.string().describe("Button text to display"),
           primary: z
             .boolean()
-            .optional()
             .describe(
               "Whether this is a primary action (true) or secondary action (false)"
             ),
@@ -96,9 +94,8 @@ export const suggestActions = tool({
       .describe("Array of action buttons to display to the user"),
     includeOtherOption: z
       .boolean()
-      .optional()
       .describe(
-        "Whether to include an 'Other...' option that allows the user to type a custom response"
+        "Whether to include an Other option that allows the user to type a custom response"
       )
   })
 });

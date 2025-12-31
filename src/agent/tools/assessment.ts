@@ -68,10 +68,10 @@ export const storeIdeaInformation = tool({
       if (!currentState.currentIdea) {
         updatedIdea = {
           idea_id: generateId(),
-          title: title || "Untitled Idea",
+          title: (title && title.trim() !== "") ? title : "Untitled Idea",
           one_liner: one_liner || "",
           description: description || "",
-          stage: stage || "concept",
+          stage: (stage && stage !== "unknown") ? stage : "concept",
           created_at: now,
           updated_at: now,
           founder_background,
@@ -135,19 +135,19 @@ export const storeIdeaInformation = tool({
           }
         };
       } else {
-        // Update existing idea
+        // Update existing idea (only update fields with non-empty values)
         updatedIdea = {
           ...currentState.currentIdea,
-          title: title || currentState.currentIdea.title,
-          one_liner: one_liner || currentState.currentIdea.one_liner,
-          description: description || currentState.currentIdea.description,
-          stage: stage || currentState.currentIdea.stage,
+          title: (title && title.trim() !== "") ? title : currentState.currentIdea.title,
+          one_liner: (one_liner && one_liner.trim() !== "") ? one_liner : currentState.currentIdea.one_liner,
+          description: (description && description.trim() !== "") ? description : currentState.currentIdea.description,
+          stage: (stage && stage !== "unknown") ? stage : currentState.currentIdea.stage,
           founder_background:
-            founder_background || currentState.currentIdea.founder_background,
+            (founder_background && founder_background.trim() !== "") ? founder_background : currentState.currentIdea.founder_background,
           target_market:
-            target_market || currentState.currentIdea.target_market,
+            (target_market && target_market.trim() !== "") ? target_market : currentState.currentIdea.target_market,
           business_model:
-            business_model || currentState.currentIdea.business_model,
+            (business_model && business_model.trim() !== "") ? business_model : currentState.currentIdea.business_model,
           updated_at: now
         };
       }
@@ -188,28 +188,23 @@ export const storeIdeaInformation = tool({
     }
   },
   parameters: z.object({
-    title: z.string().optional().describe("The idea title/name"),
-    one_liner: z.string().optional().describe("A concise one-line description"),
+    title: z.string().describe("The idea title/name, or empty string if not yet known"),
+    one_liner: z.string().describe("A concise one-line description, or empty string if not yet known"),
     description: z
       .string()
-      .optional()
-      .describe("Detailed description of the idea"),
+      .describe("Detailed description of the idea, or empty string if not yet known"),
     stage: z
-      .enum(["concept", "pre-MVP", "MVP", "post-launch"])
-      .optional()
-      .describe("Current development stage"),
+      .enum(["concept", "pre-MVP", "MVP", "post-launch", "unknown"])
+      .describe("Current development stage, or 'unknown' if not yet determined"),
     founder_background: z
       .string()
-      .optional()
-      .describe("Founder's relevant background and expertise"),
+      .describe("Founder's relevant background and expertise, or empty string if not yet known"),
     target_market: z
       .string()
-      .optional()
-      .describe("Description of target market/customers"),
+      .describe("Description of target market/customers, or empty string if not yet known"),
     business_model: z
       .string()
-      .optional()
-      .describe("How the business plans to make money")
+      .describe("How the business plans to make money, or empty string if not yet known")
   })
 });
 
@@ -258,7 +253,7 @@ export const storeConversationInsights = tool({
         id: generateId(),
         type: insight.insight_type,
         content: insight.content,
-        factor_related: insight.factor_related,
+        factor_related: insight.factor_related === "none" ? undefined : insight.factor_related,
         confidence_level: insight.confidence_level,
         timestamp: now
       }));
@@ -333,16 +328,15 @@ export const storeConversationInsights = tool({
               "early_demand",
               "traffic_authority",
               "marketing_product_fit",
-              "other"
+              "other",
+              "none"
             ])
-            .optional()
-            .describe("Which assessment factor this relates to"),
+            .describe("Which assessment factor this relates to, or 'none' if not factor-specific"),
           confidence_level: z
             .number()
             .min(0)
             .max(1)
-            .optional()
-            .describe("Confidence in this insight (0-1)")
+            .describe("Confidence in this insight (0-1), use 0.5 if uncertain")
         })
       )
       .describe("Array of insights to store")
@@ -514,21 +508,18 @@ export const updateFactorScore = tool({
             ])
             .describe("Type of evidence supporting this score"),
           evidence_value: z
-            .any()
-            .describe("The evidence data/value from the conversation"),
+            .string()
+            .describe("The evidence data/value from the conversation as a string"),
           evidence_source: z
             .string()
-            .optional()
-            .describe("Source of the evidence"),
+            .describe("Source of the evidence, or 'conversation' if from chat"),
           evidence_notes: z
             .string()
-            .optional()
-            .describe("Additional notes about the evidence"),
+            .describe("Additional notes about the evidence, or empty string if none"),
           confidence: z
             .number()
             .min(0)
             .max(1)
-            .optional()
             .describe("Confidence level in the evidence (0-1)")
         })
       )
@@ -621,7 +612,7 @@ export const selectIdea = tool({
     ideaId: z
       .string()
       .describe("ID of the idea to select, or 'new' for starting a new idea"),
-    reason: z.string().optional().describe("Why switching to this idea")
+    reason: z.string().describe("Why switching to this idea, or empty string if no specific reason")
   }),
   execute: async ({ ideaId, reason }) => {
     const { agent } = getCurrentAgent<AppAgent>();
@@ -668,7 +659,7 @@ export const selectIdea = tool({
       await agent.setState(newState);
 
       const progress = getIdeaProgress(idea);
-      const reasonText = reason ? ` (${reason})` : "";
+      const reasonText = (reason && reason.trim() !== "") ? ` (${reason})` : "";
 
       return `Now focusing on "${idea.title}"${reasonText}. Current status: ${progress}. How would you like to continue working on this idea?`;
     } catch (error) {
@@ -703,9 +694,9 @@ export const deleteIdea = tool({
     try {
       const currentState = agent.state as AppAgentState;
 
-      // Determine which idea to delete
+      // Determine which idea to delete (empty string means current idea)
       let targetIdea: Idea | undefined;
-      if (ideaId) {
+      if (ideaId && ideaId.trim() !== "") {
         targetIdea = currentState.ideas?.find((i) => i.idea_id === ideaId);
       } else {
         targetIdea = currentState.currentIdea || undefined;
@@ -780,9 +771,8 @@ export const deleteIdea = tool({
   parameters: z.object({
     ideaId: z
       .string()
-      .optional()
       .describe(
-        "ID of the idea to delete (if not provided, deletes current idea)"
+        "ID of the idea to delete, or empty string to delete current idea"
       ),
     confirmDelete: z
       .boolean()
