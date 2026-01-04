@@ -9,10 +9,11 @@ import {
   generateId,
   type StreamTextOnFinishCallback,
   streamText,
-  type ToolSet,
+  type ToolSet
 } from "ai";
 import { getUnifiedSystemPrompt } from "./prompts/index";
 import { executions, tools } from "./tools/registry";
+import { simulateThinkingLLM } from "./middleware/simulateThinkingMiddleware";
 import type {
   AdminContact,
   Operator,
@@ -20,15 +21,16 @@ import type {
   TestResult,
   ToolDocumentation,
   TransitionRecommendation,
-  TypedRecord,
+  TypedRecord
 } from "./types/generic";
 import {
   type DatabaseExportResult,
   exportAgentData,
   type ImportRequest,
-  importAgentData,
+  importAgentData
 } from "./utils/export-import-utils";
 import { processToolCalls } from "./utils/tool-utils";
+import { ShareAssetGenerator } from "../services/share-asset-generator";
 
 // AI @ Your Service Gateway configuration
 const getOpenAI = (env: Env, apiKey?: string) => {
@@ -37,7 +39,7 @@ const getOpenAI = (env: Env, apiKey?: string) => {
   }
   return createOpenAI({
     apiKey: apiKey,
-    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`,
+    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`
   });
 };
 
@@ -100,6 +102,118 @@ export function getErrorMessage(error: unknown): string {
 // Agent operating modes
 export type AgentMode = "onboarding" | "integration" | "plan" | "act";
 
+// IdeaPotential types for startup idea assessment
+export type ChecklistKey =
+  | "problem_clarity"
+  | "market_pain_mentions"
+  | "outcome_gap"
+  | "competitive_moat"
+  | "team_solution_fit"
+  | "solution_evidence"
+  | "team_market_fit"
+  | "early_demand"
+  | "traffic_authority"
+  | "marketing_product_fit"
+  | "other";
+
+export interface Evidence {
+  evidence_id: string;
+  // Expanded to include conversational and analysis sources used by tools
+  type:
+    | "manual_input"
+    | "auto_fetch"
+    | "peer_proof"
+    | "prospect_pulse"
+    | "seo_metric"
+    | "social_metric"
+    | "survey_response"
+    | "conversation"
+    | "user_statement"
+    | "market_research"
+    | "competitive_analysis"
+    | "demo_feedback"
+    | "metrics"
+    | "other";
+  source?: string;
+  value: unknown;
+  confidence?: number;
+  notes?: string;
+  reasoning?: string;
+  timestamp: string;
+  added_by: "agent" | "system" | "user";
+}
+
+export interface ChecklistItem {
+  score: number | null;
+  evidence_strength: 0 | 1 | 2 | 3;
+  evidence: Evidence[];
+  last_scored_at?: string;
+}
+
+export interface DerivedScores {
+  potential_score: number;
+  actualization_score: number;
+  potential_bucket: "unknown" | "red" | "yellow" | "green";
+  actualization_bucket: "unknown" | "red" | "yellow" | "green";
+}
+
+export interface IdeaMetrics {
+  waitlist_signups?: number;
+  mrr?: number;
+  lois?: number;
+  pain_mentions?: { online: number; conversations: number };
+}
+
+export interface ConversationInsight {
+  id: string;
+  type:
+    | "user_quote"
+    | "market_insight"
+    | "competitive_intel"
+    | "user_behavior"
+    | "pain_point"
+    | "solution_feedback"
+    | "early_demand"
+    | "traffic_authority"
+    | "other";
+  content: string;
+  factor_related?: ChecklistKey;
+  confidence_level?: number;
+  timestamp: string;
+}
+
+export interface Idea {
+  idea_id: string;
+  title: string;
+  one_liner: string;
+  description?: string;
+  // Additional descriptive fields used by assessment tools and UI
+  founder_background?: string;
+  target_market?: string;
+  business_model?: string;
+  conversation_insights?: ConversationInsight[];
+  stage: "concept" | "pre-MVP" | "MVP" | "post-launch";
+  created_at: string;
+  updated_at: string;
+  metrics: IdeaMetrics;
+  checklist: Record<ChecklistKey, ChecklistItem>;
+  derived: DerivedScores;
+  recommended_tweak?: string;
+}
+
+export interface FounderProfile {
+  id: string;
+  name?: string;
+  email?: string;
+  experience_years?: number;
+  team_size?: number;
+  passion_score?: number;
+  unfair_advantage?: string;
+  timezone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Define AppAgentState interface for proper typing
 export interface AppAgentState {
   mode: AgentMode;
@@ -116,7 +230,7 @@ export interface AppAgentState {
     email: string;
     credits: number;
     payment_method: string;
-    api_key?: string; // User's AtYourService.ai API key
+    // JWT API key removed - now stored only in SQLite
   };
 
   // Onboarding mode state
@@ -130,6 +244,17 @@ export interface AppAgentState {
   isIntegrationComplete?: boolean;
   transitionRecommendation?: TransitionRecommendation;
 
+  // IdeaPotential assessment state
+  founderProfile?: FounderProfile;
+  currentIdea?: Idea;
+  ideas?: Idea[];
+  assessmentProgress?: {
+    currentStep: number;
+    totalSteps: number;
+    completedFactors: ChecklistKey[];
+    isAssessmentComplete: boolean;
+  };
+
   // Optional metadata
   _lastModeChange?: string;
 }
@@ -139,23 +264,26 @@ export interface AppAgentState {
  * Can operate as a planning assistant, action executor, or general purpose agent
  */
 export class AppAgent extends AIChatAgent<Env> {
+  // Store the internal agent ID
+  agentId: string;
+
   // Define initial agent state including the current mode
   initialState: AppAgentState = {
     isIntegrationComplete: false,
     isOnboardingComplete: false,
-    mode: "onboarding" as AgentMode,
+    mode: "act" as AgentMode, // Default to act mode for MVP
     onboardingStep: "start",
     settings: {
       adminContact: {
         email: "",
-        name: "",
+        name: ""
       },
       language: "en",
-      operators: [],
+      operators: []
     },
     // Integration state
     testResults: {},
-    toolDocumentation: {},
+    toolDocumentation: {}
   };
 
   // Ensure the current state matches the latest schema, merging in any missing fields
@@ -170,9 +298,9 @@ export class AppAgent extends AIChatAgent<Env> {
       !["onboarding", "integration", "plan", "act"].includes(state.mode)
     ) {
       console.log(
-        "[AppAgent] No valid mode found in state, defaulting to onboarding mode"
+        "[AppAgent] No valid mode found in state, defaulting to act mode"
       );
-      state.mode = "onboarding";
+      state.mode = "act"; // Default to act mode for MVP
     }
 
     // Ensure settings exists
@@ -194,6 +322,12 @@ export class AppAgent extends AIChatAgent<Env> {
 
   constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
+
+    // Store the ctx ID for reference
+    this.agentId = ctx.id.toString();
+
+    console.log(`[AppAgent] Initialized with internal ID: ${this.agentId}`);
+
     // Load initial state and ensure schema
     const state = this.state as AppAgentState;
     const updatedState = this.ensureStateSchema(state);
@@ -214,20 +348,88 @@ export class AppAgent extends AIChatAgent<Env> {
   }
 
   /**
+   * Get JWT token from centralized UserDO (secure method)
+   * @returns JWT token string or null if not found
+   */
+  private async getJWTFromUserDO(): Promise<string | null> {
+    try {
+      const state = this.state as AppAgentState;
+      const userId = state.userInfo?.id;
+
+      console.log(`[AppAgent] getJWTFromUserDO called for user: ${userId}`);
+      console.log(
+        `[AppAgent] Current state:`,
+        JSON.stringify({
+          userInfo: state.userInfo,
+          hasUserInfo: !!state.userInfo,
+          userId: userId
+        })
+      );
+
+      if (!userId) {
+        console.error(
+          "[AppAgent] No user ID available to fetch JWT from UserDO"
+        );
+        return null;
+      }
+
+      // Fetch JWT from centralized UserDO
+      console.log(
+        `[AppAgent] Fetching JWT from centralized UserDO for user: ${userId}`
+      );
+
+      const userDOId = this.env.UserDO.idFromName(userId);
+      const userDO = this.env.UserDO.get(userDOId);
+
+      console.log(`[AppAgent] UserDO ID: ${userDOId.toString()}`);
+
+      const response = await userDO.fetch(
+        new Request(`https://user-do/get-jwt`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        })
+      );
+
+      console.log(`[AppAgent] UserDO response status: ${response.status}`);
+
+      if (response.ok) {
+        const data = (await response.json()) as { api_key?: string };
+
+        if (data.api_key) {
+          console.log(`[AppAgent] Found JWT in centralized UserDO`);
+          return data.api_key;
+        } else {
+          console.warn(`[AppAgent] UserDO returned empty api_key field`);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error(
+          `[AppAgent] UserDO request failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      console.warn(
+        `[AppAgent] No JWT token found in centralized UserDO for user: ${userId}`
+      );
+      return null;
+    } catch (error) {
+      console.error("[AppAgent] Failed to fetch JWT from UserDO:", error);
+      return null;
+    }
+  }
+
+  /**
    * Get AI provider using user-specific API key if available
    * Includes retry logic for token refresh on 403 errors
    */
-  getAIProvider() {
+  async getAIProvider() {
     const state = this.state as AppAgentState;
-    const userApiKey = state.userInfo?.api_key;
+    // Fetch JWT from centralized UserDO instead of state for security
+    const userApiKey = await this.getJWTFromUserDO();
 
     if (userApiKey) {
-      const redactedApiKey = `${userApiKey.substring(0, 20)}...${userApiKey.substring(-8)}`;
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
-      );
-      console.log(
-        `[AppAgent] API key being used for AI requests: ${redactedApiKey}`
       );
       return getOpenAI(this.env, userApiKey);
     }
@@ -243,8 +445,8 @@ export class AppAgent extends AIChatAgent<Env> {
    */
   async refreshTokenOnError() {
     try {
-      const state = this.state as AppAgentState;
-      const currentApiKey = state.userInfo?.api_key;
+      // Fetch current JWT from centralized UserDO instead of state
+      const currentApiKey = await this.getJWTFromUserDO();
 
       if (!currentApiKey) {
         console.log("[AppAgent] No current API key to refresh");
@@ -259,16 +461,11 @@ export class AppAgent extends AIChatAgent<Env> {
       // This will detect if the token is invalid and handle accordingly
       await this.fetchUserInfoFromOAuth(currentApiKey);
 
-      // Check if token was actually updated
-      const newState = this.state as AppAgentState;
-      const newApiKey = newState.userInfo?.api_key;
+      // Check if token was actually updated in UserDO
+      const newApiKey = await this.getJWTFromUserDO();
 
       if (newApiKey && newApiKey !== currentApiKey) {
-        const redactedOld = `${currentApiKey.substring(0, 20)}...${currentApiKey.substring(-8)}`;
-        const redactedNew = `${newApiKey.substring(0, 20)}...${newApiKey.substring(-8)}`;
-        console.log(
-          `[AppAgent] ✅ Token refreshed: ${redactedOld} → ${redactedNew}`
-        );
+        console.log(`[AppAgent] ✅ Token refreshed successfully`);
         return true;
       }
       console.log("[AppAgent] Token refresh did not result in new token");
@@ -311,27 +508,31 @@ export class AppAgent extends AIChatAgent<Env> {
       // Context tools
       getWeatherInformation: tools.getWeatherInformation,
 
-      // Search tools
-      runResearch: tools.runResearch,
-
       // Scheduling tools
       scheduleTask: tools.scheduleTask,
-      setMode: tools.setMode,
+      setMode: tools.setMode
 
-      // Messaging tools
-      suggestActions: tools.suggestActions,
+      // Messaging tools (limited for MVP)
+      // suggestActions: tools.suggestActions, // Disabled - not working well
     };
 
     // Mode-specific tools
     switch (mode) {
       case "onboarding":
-        // Onboarding mode - enable configuration tools
+        // Onboarding mode - enable configuration tools and assessment tools
         return {
           ...baseTools,
           checkExistingConfig: tools.checkExistingConfig,
           completeOnboarding: tools.completeOnboarding,
           getOnboardingStatus: tools.getOnboardingStatus,
           saveSettings: tools.saveSettings,
+          // Assessment tools for idea validation (also available during onboarding)
+          getAssessmentState: tools.getAssessmentState,
+          storeIdeaInformation: tools.storeIdeaInformation,
+          storeConversationInsights: tools.storeConversationInsights,
+          updateFactorScore: tools.updateFactorScore,
+          selectIdea: tools.selectIdea,
+          deleteIdea: tools.deleteIdea
         } as ToolSet;
 
       case "integration":
@@ -342,20 +543,27 @@ export class AppAgent extends AIChatAgent<Env> {
           documentTool: tools.documentTool,
           generateTestReport: tools.generateTestReport,
           recordTestResult: tools.recordTestResult,
-          testErrorTool: tools.testErrorTool,
+          testErrorTool: tools.testErrorTool
         } as ToolSet;
 
       case "act":
-        // Action mode - enable all tools for execution
+        // Action mode - enable assessment tools for idea validation
         return {
           ...baseTools,
-          testErrorTool: tools.testErrorTool,
+          // Assessment tools for idea validation
+          getAssessmentState: tools.getAssessmentState,
+          storeIdeaInformation: tools.storeIdeaInformation,
+          storeConversationInsights: tools.storeConversationInsights,
+          updateFactorScore: tools.updateFactorScore,
+          selectIdea: tools.selectIdea,
+          deleteIdea: tools.deleteIdea,
+          testErrorTool: tools.testErrorTool
         } as ToolSet;
 
       default:
         // Planning mode - basic tools for planning and analysis
         return {
-          ...baseTools,
+          ...baseTools
         } as ToolSet;
     }
   }
@@ -398,7 +606,7 @@ export class AppAgent extends AIChatAgent<Env> {
           dataStream,
           executions,
           messages: this.messages,
-          tools: allTools,
+          tools: allTools
         });
 
         // Filter out empty messages for AI provider compatibility
@@ -414,8 +622,16 @@ export class AppAgent extends AIChatAgent<Env> {
 
         while (retryCount <= maxRetries) {
           try {
-            const openai = this.getAIProvider();
-            const model = openai("gpt-5-mini-2025-08-07");
+            const openai = await this.getAIProvider();
+            let model = openai("gpt-5-mini-2025-08-07");
+
+            // Enable simulation for testing if environment variable is set
+            if (this.env.SIMULATE_THINKING_TOKENS === "true") {
+              model = simulateThinkingLLM();
+              console.log(
+                "[AppAgent] Using simulated thinking tokens for testing"
+              );
+            }
 
             // Stream the AI response
             result = streamText({
@@ -425,6 +641,22 @@ export class AppAgent extends AIChatAgent<Env> {
               temperature: 1,
               onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
+
+                // Handle tool validation errors specifically
+                if (error && typeof error === "object" && "message" in error) {
+                  const errorMessage = String(error.message);
+                  if (
+                    errorMessage.includes("Invalid arguments for tool") &&
+                    errorMessage.includes("Type validation failed")
+                  ) {
+                    console.log(
+                      "[AppAgent] Tool validation error detected, converting to non-fatal error"
+                    );
+                    // Don't throw - let the stream continue and handle this as a tool error
+                    return;
+                  }
+                }
+
                 if (
                   error &&
                   typeof error === "object" &&
@@ -451,17 +683,36 @@ export class AppAgent extends AIChatAgent<Env> {
                   `[AppAgent] Completed processing message in ${currentMode} mode`
                 );
 
+                // Handle reasoning tokens if they exist
+                if ("reasoning" in args && args.reasoning) {
+                  console.log(
+                    `[AppAgent] Reasoning tokens captured: ${args.reasoning.length} characters`
+                  );
+                  console.log(
+                    `[AppAgent] Reasoning preview: ${args.reasoning.substring(0, 200)}...`
+                  );
+
+                  // Stream thinking tokens to the client for optional display
+                  dataStream.writeData({
+                    type: "thinking-tokens",
+                    content: args.reasoning
+                  });
+                }
+
                 // Pass args directly to onFinish callback
                 onFinish(
                   args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
                 );
               },
               system: systemPrompt,
-              tools: allTools,
+              tools: allTools
             });
             break; // Success, exit retry loop
           } catch (error: unknown) {
             console.error("[AppAgent] Error in onChatMessage:", error);
+
+            // For tool validation errors, let them bubble up to useChat onError handler
+            // which will convert them to synthetic tool calls
 
             // Handle 403 errors with token refresh retry
             if (
@@ -494,7 +745,7 @@ export class AppAgent extends AIChatAgent<Env> {
           result.mergeIntoDataStream(dataStream);
         }
       },
-      onError: getErrorMessage,
+      onError: getErrorMessage
     });
 
     return dataStreamResponse;
@@ -510,8 +761,8 @@ export class AppAgent extends AIChatAgent<Env> {
         content: `Running scheduled task: ${description}`,
         createdAt: new Date(),
         id: generateId(),
-        role: "user",
-      },
+        role: "user"
+      }
     ]);
   }
 
@@ -541,11 +792,10 @@ export class AppAgent extends AIChatAgent<Env> {
         )
       `;
 
-      // User authentication and billing info table
+      // User authentication and billing info table (JWT token stored in UserDO only)
       await this.sql`
         CREATE TABLE IF NOT EXISTS user_info (
           user_id TEXT PRIMARY KEY,
-          api_key TEXT NOT NULL,
           email TEXT NOT NULL,
           credits REAL NOT NULL,
           payment_method TEXT NOT NULL,
@@ -590,11 +840,40 @@ export class AppAgent extends AIChatAgent<Env> {
     const url = new URL(request.url);
 
     console.log("Incoming agent request", {
+      method: request.method,
       pathname: url.pathname,
-      url: url.toString(),
+      url: url.toString()
     });
 
-    // Extract OAuth token from request and ensure user info is loaded
+    // Validate that the URL follows project-specific format
+    // Expected: /agents/app-agent/{userId}-{projectName}/...
+    const pathParts = url.pathname.split("/");
+    if (
+      pathParts.length >= 4 &&
+      pathParts[1] === "agents" &&
+      pathParts[2] === "app-agent"
+    ) {
+      const agentPath = pathParts[3];
+      const dashParts = agentPath.split("-");
+
+      // Check if this looks like a non-project-specific URL
+      if (
+        agentPath === "not-project-specific" ||
+        !agentPath.includes("-") ||
+        dashParts.length < 2
+      ) {
+        const errorMessage = `Invalid agent URL: '${url.pathname}' must follow project-specific format '/agents/app-agent/{userId}-{projectName}/...'. Non-project-specific agents are not supported.`;
+        console.error("[AppAgent]", errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const [userId, projectName] = agentPath.split("-", 2);
+      console.log(
+        `[AppAgent] Processing request for project-specific agent - User: ${userId}, Project: ${projectName}`
+      );
+    }
+
+    // Extract OAuth token from request
     const token = url.searchParams.get("token");
     const currentState = this.state as AppAgentState;
 
@@ -610,6 +889,9 @@ export class AppAgent extends AIChatAgent<Env> {
       url.pathname.endsWith("/store-user-info") &&
       request.method === "POST"
     ) {
+      console.log(
+        `[AppAgent] store-user-info endpoint called with URL: ${url.pathname}`
+      );
       try {
         const userInfo = (await request.json()) as {
           user_id: string;
@@ -623,13 +905,14 @@ export class AppAgent extends AIChatAgent<Env> {
           `[AppAgent] Storing user info for user: ${userInfo.user_id}`
         );
 
-        // Store user info in database for persistence
-        await this.sql`
+        console.log(`[AppAgent] Storing user info and JWT token in UserDO`);
+
+        // Store user info in local database (excluding api_key - only in UserDO)
+        this.sql`
           INSERT OR REPLACE INTO user_info (
-            user_id, api_key, email, credits, payment_method, updated_at
+            user_id, email, credits, payment_method, updated_at
           ) VALUES (
             ${userInfo.user_id},
-            ${userInfo.api_key},
             ${userInfo.email},
             ${userInfo.credits},
             ${userInfo.payment_method},
@@ -637,16 +920,48 @@ export class AppAgent extends AIChatAgent<Env> {
           )
         `;
 
-        // Also update agent state for immediate use
+        // ALSO store in centralized UserDO (this is the important fix!)
+        console.log(
+          `[AppAgent] Also storing user info in centralized UserDO...`
+        );
+        try {
+          const userDOId = this.env.UserDO.idFromName(userInfo.user_id);
+          const userDO = this.env.UserDO.get(userDOId);
+
+          const userDOResponse = await userDO.fetch(
+            new Request(`https://user-do/store-user-info`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(userInfo)
+            })
+          );
+
+          if (userDOResponse.ok) {
+            console.log(
+              `[AppAgent] Successfully stored user info in UserDO for user: ${userInfo.user_id}`
+            );
+          } else {
+            const errorText = await userDOResponse.text();
+            console.error(
+              `[AppAgent] Failed to store in UserDO: ${userDOResponse.status} - ${errorText}`
+            );
+          }
+        } catch (userDOError) {
+          console.error(`[AppAgent] Error storing in UserDO:`, userDOError);
+        }
+
+        // JWT token is now stored only in centralized UserDO, not in local database
+
+        // Also update agent state for immediate use (without JWT for security)
         const updatedState: AppAgentState = {
           ...currentState,
           userInfo: {
-            api_key: userInfo.api_key,
+            // JWT token removed - now stored only in SQLite for security
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,
-            payment_method: userInfo.payment_method,
-          },
+            payment_method: userInfo.payment_method
+          }
         };
 
         this.setState(updatedState);
@@ -675,7 +990,7 @@ export class AppAgent extends AIChatAgent<Env> {
         // Clear user info from agent state
         const updatedState: AppAgentState = {
           ...currentState,
-          userInfo: undefined,
+          userInfo: undefined
         };
 
         this.setState(updatedState);
@@ -702,7 +1017,7 @@ export class AppAgent extends AIChatAgent<Env> {
           return Response.json(
             {
               error: "Method not allowed, use POST",
-              success: false,
+              success: false
             },
             { status: 405 }
           );
@@ -712,7 +1027,7 @@ export class AppAgent extends AIChatAgent<Env> {
         const {
           mode: newModeString,
           force: forceFlag,
-          isAfterClearHistory: clearHistoryFlag,
+          isAfterClearHistory: clearHistoryFlag
         } = body as {
           mode?: string;
           force?: boolean;
@@ -729,7 +1044,7 @@ export class AppAgent extends AIChatAgent<Env> {
           return Response.json(
             {
               error: "Invalid mode specified",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -747,7 +1062,7 @@ export class AppAgent extends AIChatAgent<Env> {
         return Response.json(
           {
             error: error instanceof Error ? error.message : String(error),
-            success: false,
+            success: false
           },
           { status: 500 }
         );
@@ -759,14 +1074,24 @@ export class AppAgent extends AIChatAgent<Env> {
       console.log("[AppAgent] Handling /get-messages request");
 
       try {
-        // Try to get messages normally
-        const messages = (
-          this.sql`select * from cf_ai_chat_agent_messages` || []
-        ).map((row) => {
-          return JSON.parse(row.message as string);
-        });
+        // Query messages from SQLite database (persisted across DO evictions)
+        const messageRows = this
+          .sql`SELECT * FROM cf_ai_chat_agent_messages ORDER BY created_at`;
+        const messages = [];
 
+        for await (const row of messageRows) {
+          try {
+            messages.push(JSON.parse(row.message as string));
+          } catch (error) {
+            console.error(
+              "[AppAgent] Error parsing message from database:",
+              error
+            );
+            // Skip malformed messages rather than failing entirely
+          }
+        }
         const messageCount = Array.isArray(messages) ? messages.length : 0;
+
         console.log(
           `[AppAgent] /get-messages returning ${messageCount} messages`
         );
@@ -782,9 +1107,9 @@ export class AppAgent extends AIChatAgent<Env> {
       }
     }
 
-    // Export endpoint to export the entire Agent data
-    if (url.pathname.endsWith("/export")) {
-      console.log("[AppAgent] Data export requested");
+    // Backup endpoint to export the entire Agent data as JSON
+    if (url.pathname.endsWith("/backup/export")) {
+      console.log("[AppAgent] Backup export requested");
 
       // Use the utility function to handle export
       const exportResult = await exportAgentData(this);
@@ -793,19 +1118,120 @@ export class AppAgent extends AIChatAgent<Env> {
       return new Response(JSON.stringify(exportResult, null, 2), {
         headers: {
           "Content-Disposition": `attachment; filename="agent-export-${Date.now()}.json"`,
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"
+        }
       });
     }
 
-    // Import endpoint to restore data from a previous export
-    if (url.pathname.endsWith("/import")) {
+    // Create project endpoint
+    if (url.pathname.endsWith("/create-project") && request.method === "POST") {
+      console.log("[AppAgent] Project creation requested");
+
+      try {
+        const body = (await request.json()) as {
+          projectName: string;
+          displayName: string;
+        };
+        const { projectName, displayName } = body;
+
+        if (!projectName || !displayName) {
+          return Response.json(
+            {
+              error: "projectName and displayName are required",
+              success: false
+            },
+            { status: 400 }
+          );
+        }
+
+        // Get user info to verify authentication
+        const state = this.state as AppAgentState;
+        if (!state.userInfo?.id) {
+          return Response.json(
+            { error: "User not authenticated", success: false },
+            { status: 401 }
+          );
+        }
+
+        // Use UserDO to create the project
+        const userDOId = this.env.UserDO.idFromName(state.userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request("https://localhost/create-project", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectName, displayName })
+          })
+        );
+
+        if (!userDOResponse.ok) {
+          const error = await userDOResponse.text();
+          return Response.json(
+            { error: `Failed to create project: ${error}`, success: false },
+            { status: 500 }
+          );
+        }
+
+        return Response.json({ success: true });
+      } catch (error) {
+        console.error("[AppAgent] Error creating project:", error);
+        return Response.json(
+          { error: "Internal server error", success: false },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Get projects endpoint
+    if (url.pathname.endsWith("/get-projects")) {
+      console.log("[AppAgent] Projects list requested");
+
+      try {
+        // Get user info to verify authentication
+        const state = this.state as AppAgentState;
+        if (!state.userInfo?.id) {
+          return Response.json(
+            { error: "User not authenticated", success: false },
+            { status: 401 }
+          );
+        }
+
+        // Use UserDO to get projects
+        const userDOId = this.env.UserDO.idFromName(state.userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request("https://localhost/list-projects")
+        );
+
+        if (!userDOResponse.ok) {
+          const error = await userDOResponse.text();
+          return Response.json(
+            { error: `Failed to get projects: ${error}`, success: false },
+            { status: 500 }
+          );
+        }
+
+        const projects = await userDOResponse.json();
+        return Response.json(projects);
+      } catch (error) {
+        console.error("[AppAgent] Error getting projects:", error);
+        return Response.json(
+          { error: "Internal server error", success: false },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Backup import endpoint to restore data from a previous export
+    if (url.pathname.endsWith("/backup/import")) {
       // Only accept POST requests for import
       if (request.method !== "POST") {
         return Response.json(
           {
             error: "Method not allowed, use POST",
-            success: false,
+            success: false
           },
           { status: 405 }
         );
@@ -829,7 +1255,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "No file provided in the request. Please upload a backup file.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -846,7 +1272,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "Invalid JSON file format. Could not parse the backup file.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -858,7 +1284,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "Invalid backup file structure. Missing metadata or tables.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -875,8 +1301,8 @@ export class AppAgent extends AIChatAgent<Env> {
           options: {
             includeMessages,
             includeScheduledTasks,
-            preserveAgentId,
-          },
+            preserveAgentId
+          }
         };
       } else {
         console.log("[AppAgent] Processing JSON payload import");
@@ -905,7 +1331,7 @@ export class AppAgent extends AIChatAgent<Env> {
             {
               error:
                 "Invalid import data format. Expected {options, data} structure.",
-              success: false,
+              success: false
             },
             { status: 400 }
           );
@@ -913,13 +1339,62 @@ export class AppAgent extends AIChatAgent<Env> {
 
         importRequest = {
           data: body.data as unknown as DatabaseExportResult,
-          options: body.options || {},
+          options: body.options || {}
         };
       }
 
       // Process import
       const importResult = await importAgentData(this, importRequest);
       return Response.json(importResult);
+    }
+
+    // Handle image export requests (PNG/SVG)
+    if (url.pathname.endsWith("/export") && request.method === "POST") {
+      console.log("[AppAgent] Image export requested");
+
+      try {
+        const body = (await request.json()) as {
+          type?: "png" | "svg";
+          format?: "social" | "document" | "mobile";
+          theme?: "light" | "dark";
+          includeDebug?: boolean;
+        };
+
+        const {
+          format = "square",
+          theme = "light",
+          includeDebug = false
+        } = body;
+
+        // Get current agent state
+        const state = this.state as AppAgentState;
+
+        // Create export generator service
+        const exportGenerator = new ShareAssetGenerator();
+
+        // Generate PNG export
+        const pngBuffer = await exportGenerator.generatePNGExport(state, {
+          format,
+          theme,
+          includeDebug
+        });
+
+        return new Response(Buffer.from(pngBuffer), {
+          headers: {
+            "Content-Type": "image/png",
+            "Content-Disposition": `attachment; filename="agent-export-${format}-${theme}.png"`
+          }
+        });
+      } catch (error) {
+        console.error("[AppAgent] Error generating export:", error);
+        return Response.json(
+          {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error"
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // For all other cases, let the regular chat flow handle it
@@ -940,7 +1415,7 @@ export class AppAgent extends AIChatAgent<Env> {
       messageCount,
       mode: state?.mode,
       source: typeof source === "string" ? source : "client",
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 
@@ -952,7 +1427,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
     console.log("[AppAgent] Connection established", {
       connectionId: connection.id,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
     // SOLUTION: Load user info from database and rely on retry logic for token refresh
@@ -969,7 +1444,7 @@ export class AppAgent extends AIChatAgent<Env> {
     connection.send(
       JSON.stringify({
         timestamp: new Date().toISOString(),
-        type: "connection-ready",
+        type: "connection-ready"
       })
     );
   }
@@ -993,7 +1468,7 @@ export class AppAgent extends AIChatAgent<Env> {
       await this.setState({
         ...currentState,
         _lastModeChange: new Date().toISOString(),
-        mode,
+        mode
       });
 
       console.log(`[AppAgent] Mode changed to ${mode}`);
@@ -1002,7 +1477,7 @@ export class AppAgent extends AIChatAgent<Env> {
     return {
       currentMode: mode,
       previousMode,
-      success: true,
+      success: true
     };
   }
 
@@ -1016,9 +1491,9 @@ export class AppAgent extends AIChatAgent<Env> {
   /**
    * Get Browser API key for the external browser rendering service
    */
-  getBrowserApiKey() {
-    const state = this.state as AppAgentState;
-    const userApiKey = state.userInfo?.api_key;
+  async getBrowserApiKey() {
+    // Fetch JWT from centralized UserDO instead of state for security
+    const userApiKey = await this.getJWTFromUserDO();
 
     if (userApiKey) {
       return userApiKey;
@@ -1045,7 +1520,7 @@ export class AppAgent extends AIChatAgent<Env> {
     const descriptions: Record<string, string> = {
       interaction_history: "Stores history of interactions",
       settings: "Stores agent settings and configuration",
-      tasks: "Stores task data",
+      tasks: "Stores task data"
     };
     return descriptions[tableName] || "Unknown table";
   }
@@ -1067,9 +1542,9 @@ export class AppAgent extends AIChatAgent<Env> {
       const response = await fetch(verifyEndpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        method: "POST",
+        method: "POST"
       });
 
       if (!response.ok) {
@@ -1091,14 +1566,13 @@ export class AppAgent extends AIChatAgent<Env> {
         `[AppAgent] Fetched user info from OAuth for user: ${userInfo.id}`
       );
 
-      // Store in database for future use
-      // OAuth token IS the gateway API key
-      await this.sql`
+      // Store user info in local database (excluding api_key - only in UserDO)
+      // OAuth token IS the gateway API key but stored only in UserDO
+      this.sql`
         INSERT OR REPLACE INTO user_info (
-          user_id, api_key, email, credits, payment_method, updated_at
+          user_id, email, credits, payment_method, updated_at
         ) VALUES (
           ${userInfo.id},
-          ${token},
           ${userInfo.email},
           ${userInfo.credits},
           ${userInfo.payment_method},
@@ -1106,17 +1580,50 @@ export class AppAgent extends AIChatAgent<Env> {
         )
       `;
 
+      // Store JWT token ONLY in centralized UserDO
+      try {
+        const userDOId = this.env.UserDO.idFromName(userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request(`https://user-do/store-user-info`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userInfo.id,
+              api_key: token,
+              email: userInfo.email,
+              credits: userInfo.credits,
+              payment_method: userInfo.payment_method
+            })
+          })
+        );
+
+        if (userDOResponse.ok) {
+          console.log(
+            `[AppAgent] Successfully stored JWT token in UserDO for user: ${userInfo.id}`
+          );
+        } else {
+          const errorText = await userDOResponse.text();
+          console.error(
+            `[AppAgent] Failed to store JWT in UserDO: ${userDOResponse.status} - ${errorText}`
+          );
+        }
+      } catch (userDOError) {
+        console.error(`[AppAgent] Error storing JWT in UserDO:`, userDOError);
+      }
+
       // Update agent state
       const state = this.state as AppAgentState;
       const updatedState: AppAgentState = {
         ...state,
         userInfo: {
-          api_key: token,
+          // JWT token removed - now stored only in SQLite for security
           credits: userInfo.credits,
           email: userInfo.email,
           id: userInfo.id,
-          payment_method: userInfo.payment_method,
-        },
+          payment_method: userInfo.payment_method
+        }
       };
 
       this.setState(updatedState);
@@ -1140,14 +1647,14 @@ export class AppAgent extends AIChatAgent<Env> {
       if (userInfoResults && userInfoResults.length > 0) {
         const userInfo = userInfoResults[0] as {
           user_id: string;
-          api_key: string;
           email: string;
           credits: number;
           payment_method: string;
         };
 
         // Check if the stored API key matches the current OAuth token
-        if (oauthToken && userInfo.api_key !== oauthToken) {
+        const storedApiKey = await this.getJWTFromUserDO();
+        if (oauthToken && storedApiKey !== oauthToken) {
           console.log(
             "[AppAgent] Stored API key doesn't match current token, fetching fresh user info from OAuth"
           );
@@ -1159,12 +1666,12 @@ export class AppAgent extends AIChatAgent<Env> {
         const updatedState: AppAgentState = {
           ...state,
           userInfo: {
-            api_key: userInfo.api_key,
+            // JWT token removed - now stored only in SQLite for security
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,
-            payment_method: userInfo.payment_method,
-          },
+            payment_method: userInfo.payment_method
+          }
         };
 
         this.setState(updatedState);

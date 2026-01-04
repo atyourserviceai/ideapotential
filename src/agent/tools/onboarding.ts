@@ -17,7 +17,7 @@ export const saveSettings = tool({
     operatorName,
     operatorEmail,
     adminContactName,
-    adminContactEmail,
+    adminContactEmail
   }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -30,7 +30,7 @@ export const saveSettings = tool({
       const currentSettings = currentState.settings || {
         adminContact: { email: "", name: "" },
         language: "en",
-        operators: [],
+        operators: []
       };
 
       // Update settings with provided values
@@ -38,7 +38,7 @@ export const saveSettings = tool({
         ...currentSettings,
         adminContact: {
           email: adminContactEmail || currentSettings.adminContact.email,
-          name: adminContactName || currentSettings.adminContact.name,
+          name: adminContactName || currentSettings.adminContact.name
         },
         language: language || currentSettings.language,
         operators: operatorName
@@ -46,18 +46,16 @@ export const saveSettings = tool({
               {
                 email: operatorEmail,
                 name: operatorName,
-                role: "primary",
+                role: "primary"
               },
-              ...currentSettings.operators.filter(
-                (op) => op.role !== "primary"
-              ),
+              ...currentSettings.operators.filter((op) => op.role !== "primary")
             ]
-          : currentSettings.operators,
+          : currentSettings.operators
       };
 
       await agent.setState({
         ...currentState,
-        settings: updatedSettings,
+        settings: updatedSettings
       });
 
       return "Settings saved successfully.";
@@ -67,24 +65,12 @@ export const saveSettings = tool({
     }
   },
   parameters: z.object({
-    adminContactEmail: z
-      .string()
-      .optional()
-      .describe("Email of the admin contact"),
-    adminContactName: z
-      .string()
-      .optional()
-      .describe("Name of the admin contact"),
-    language: z.string().optional().describe("Agent language preference"),
-    operatorEmail: z
-      .string()
-      .optional()
-      .describe("Email of the primary operator"),
-    operatorName: z
-      .string()
-      .optional()
-      .describe("Name of the primary operator"),
-  }),
+    adminContactEmail: z.string().describe("Email of the admin contact"),
+    adminContactName: z.string().describe("Name of the admin contact"),
+    language: z.string().describe("Agent language preference"),
+    operatorEmail: z.string().describe("Email of the primary operator"),
+    operatorName: z.string().describe("Name of the primary operator")
+  })
 });
 
 /**
@@ -104,7 +90,7 @@ export const completeOnboarding = tool({
 
       await agent.setState({
         ...currentState,
-        isOnboardingComplete: true,
+        isOnboardingComplete: true
       });
 
       return "Onboarding completed successfully! The agent is now ready for use.";
@@ -113,7 +99,7 @@ export const completeOnboarding = tool({
       return `Error completing onboarding: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -140,15 +126,15 @@ export const getOnboardingStatus = tool({
         settings: {
           hasAdminContact: !!settings?.adminContact?.name,
           hasOperators: (settings?.operators?.length || 0) > 0,
-          language: settings?.language || "en",
-        },
+          language: settings?.language || "en"
+        }
       };
     } catch (error) {
       console.error("Error getting onboarding status:", error);
       return `Error getting onboarding status: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -173,12 +159,12 @@ export const checkExistingConfig = tool({
         isOnboardingComplete: currentState.isOnboardingComplete,
         message: hasConfig
           ? "Agent has existing configuration"
-          : "No existing configuration found",
+          : "No existing configuration found"
       };
     } catch (error) {
       console.error("Error checking existing config:", error);
       return `Error checking existing config: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });

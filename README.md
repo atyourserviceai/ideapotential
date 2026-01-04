@@ -1,566 +1,268 @@
-# 🤖 App Agent Template
+# 💡 IdeaPotential
 
-![app-agent-template-header](https://github.com/user-attachments/assets/2a15d027-18cf-419b-952b-659e047154d1)
+![IdeaPotential Demo](https://ideapotential.com)
 
-<a href="https://deploy.workers.cloudflare.com/?url=https://github.com/atyourserviceai/app-agent-template"><img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare"/></a>
+**AI-powered startup idea assessment and validation platform**
 
-A starter template for building **app agents** using Cloudflare's Agent platform, powered by [`agents`](https://www.pnpmjs.com/package/agents). An app agent is a React application that has access to the agent's state, allowing you to build rich user interfaces around AI conversation.
+A sophisticated AI agent application that helps entrepreneurs assess the potential of their startup ideas through comprehensive analysis covering market dynamics, feasibility, risks, and strategic planning.
 
-Integrated with **[AI@YourService](https://atyourservice.ai)** for authentication and LLM Gateway access, so users pay for their own AI usage instead of you footing the bill.
+Built on Cloudflare's Agent platform and integrated with **[AI@YourService](https://atyourservice.ai)** for authentication and cost-effective LLM access.
 
-Based on Cloudflare's [agents-starter](https://github.com/cloudflare/agents-starter) with additional features:
+## What is IdeaPotential?
 
-- Enhanced chat functionality (message editing, retrying, error handling)
-- Improved error display and user feedback
-- Four-mode agent architecture (onboarding/integration/plan/act)
-- Better TypeScript types and organization
-- **AI@YourService integration** for user authentication and cost-effective LLM access
+IdeaPotential transforms the traditionally subjective process of startup idea validation into a structured, data-driven assessment. The AI agent guides users through a comprehensive evaluation framework that covers:
 
-## App Agent Architecture
+- **Market Analysis**: Market size, competition landscape, target audience validation
+- **Technical Feasibility**: Implementation complexity, resource requirements, technical risks
+- **Business Model**: Revenue streams, cost structure, scalability potential
+- **Risk Assessment**: Market, technical, financial, and execution risks
+- **Strategic Planning**: Go-to-market strategy, timeline, resource allocation
 
-This template shows how to build a React app that communicates with an AI agent:
+## Key Features
 
-### React App + Agent State
+### 🧠 **Intelligent Assessment Framework**
 
-- **React Frontend**: Standard React application with components, state management, and UI
-- **Agent Integration**: Direct access to agent state, messages, and capabilities
-- **State Synchronization**: React components can read and display agent state in real-time
-- **Rich UX**: Build any UI components needed to visualize and interact with agent data
+- Comprehensive startup evaluation covering 15+ critical factors
+- Dynamic questioning that adapts based on your idea and responses
+- Progressive scoring system with detailed explanations
+- Benchmarking against industry standards and successful startups
 
-### What You Can Build
+### 🎯 **Multi-Idea Management**
 
-Since the React app has access to the agent's state, you can create:
+- Work on multiple startup ideas simultaneously
+- Always-visible idea switcher with progress tracking
+- Seamless context switching between different assessments
+- Individual progress tracking for each idea
 
-- Custom data visualizations of agent information
-- Interactive forms and controls alongside chat
-- Status indicators and progress displays
-- Mode-specific UI that adapts to agent capabilities
-- Persistent data displays (configuration summaries, settings, etc.)
+### 📊 **Visual Progress Tracking**
 
-### Technical Implementation
+- Real-time completion percentage for each assessment
+- Stage-based progress indicators (concept → validated → detailed)
+- Color-coded status for quick overview
+- Historical progression tracking
 
-- Agent state is accessible through React hooks and context
-- UI components can trigger agent actions and tool calls
-- Chat interface is just one component among others
-- Full control over styling, layout, and user experience
+### 💬 **Conversational Assessment**
 
-## Features
+- Natural language interaction with specialized AI agent
+- Context-aware questioning that builds on previous answers
+- Ability to revisit and refine any assessment factor
+- Explanation of scoring rationale and improvement suggestions
 
-- 🤖 **App Agent Architecture**: React app with access to agent state for rich UX
-- 🏗️ **Four-Mode System**: Setup phases (onboarding + integration) before operational phases (plan + act)
-- 📋 **Saved Configuration**: Onboarding produces defaults and settings the agent operates with
-- 💬 Interactive chat interface with AI
-- ✏️ Enhanced chat functionality (edit messages, retry, error handling)
-- 🛠️ Built-in tool system with human-in-the-loop confirmation
-- 📅 Advanced task scheduling (one-time, delayed, and recurring via cron)
-- 🔧 **Tool Validation & Testing**: Integration mode ensures reliable production deployments
-- 🌓 Dark/Light theme support
-- ⚡️ Real-time streaming responses
-- 🔄 State management and chat history
-- 🎨 Modern, responsive UI
-- 🚀 Generic architecture for easy customization
+### 📈 **Enhanced User Experience**
 
-## Four-Mode Architecture
+- **Smart Balance Widget**: Visual credit usage with blue/yellow indicators
+- **Mobile-Responsive Design**: Optimized for all devices
+- **Dark/Light Theme**: Automatic theme switching support
+- **Improved Navigation**: Clean, intuitive interface design
 
-This template uses a four-mode agent architecture that goes beyond typical plan/act agents. Unlike traditional coding agents that only have planning and execution phases, this approach includes **setup phases** before operational use:
+### 🔐 **Secure & Cost-Effective**
 
-### The Four Modes & Workflow
+- User authentication via AI@YourService
+- Users pay for their own AI usage
+- Secure data storage with user-specific isolation
+- Export capabilities for data portability
 
-#### 1. **🎯 Onboarding Mode** - _Agent Owner Configuration_
+## How It Works
 
-- **Purpose**: Define the agent's goals, methodology, and operating configuration
-- **Who uses it**: The agent owner/primary stakeholder (one-time setup)
-- **What it does**: Conducts an interactive interview to document:
-  - What the agent should accomplish
-  - How it should approach tasks
-  - Company-specific processes and methodologies
-  - Success criteria and best practices
-- **Output**: Saved configuration and defaults used in future sessions (e.g., preferences, operators, guardrails)
+### 1. **Idea Creation & Selection**
 
-#### 2. **🔧 Integration Mode** - _Developer/Admin Setup_
+Start by describing your startup idea or select from existing ideas you're working on. The idea switcher allows you to manage multiple assessments simultaneously.
 
-- **Purpose**: Configure and test the tools needed to achieve the defined goals
-- **Who uses it**: Agent developers and system administrators
-- **What it does**:
-- Analyzes the onboarding configuration to identify required tools
-  - Guides integration setup for external services
-  - Tests tool functionality before production use
-  - Documents working integrations
-- **Output**: Validated, documented tool ecosystem
+### 2. **Interactive Assessment**
 
-#### 3. **🎯 Plan Mode** - _Strategy & Discussion_
+The AI agent conducts a structured interview covering:
 
-- **Purpose**: Planning and strategy development without execution
-- **Who uses it**: End users for strategic thinking
-- **What it does**: Task analysis, creating action plans, strategic discussions
-- **Tools**: No execution tools - pure planning and analysis
+- Market opportunity and target audience
+- Competitive landscape analysis
+- Technical implementation feasibility
+- Business model viability
+- Resource requirements and constraints
+- Risk factors and mitigation strategies
 
-#### 4. **🚀 Act Mode** - _Execution & Operations_
+### 3. **Progressive Scoring**
 
-- **Purpose**: Execute actions using the established configuration and tools
-- **Who uses it**: End users for day-to-day operations
-- **What it does**: Performs concrete actions guided by saved configuration and plans
-- **Tools**: Full access to execution tools
+Each factor receives a score based on your responses:
 
-### Why This Architecture Works
+- **Market Potential**: Size, growth, accessibility
+- **Competitive Advantage**: Differentiation, barriers to entry
+- **Technical Feasibility**: Complexity, resources, risks
+- **Business Viability**: Revenue model, scalability, sustainability
+- **Team & Execution**: Capability, experience, commitment
+- **Financial Projections**: Costs, revenue potential, funding needs
 
-Most AI agents jump straight into plan/act cycles without proper foundation. This approach ensures:
+### 4. **Actionable Insights**
 
-1. **Clear Purpose Definition**: Onboarding captures the "why" and "how" before building
-2. **Reliable Tool Setup**: Integration mode prevents production failures
-3. **Persisted Configuration**: Onboarding choices become default operating configuration
-4. **Scalable Operations**: Multiple users can operate the agent consistently
+Receive detailed feedback including:
 
-### Natural Progression Flow
+- Strengths and weaknesses analysis
+- Specific improvement recommendations
+- Risk mitigation strategies
+- Next steps for validation
+- Resource allocation guidance
 
-```
-Onboarding → Integration → Plan ⟷ Act
-    ↓            ↓          ↓      ↓
- Define       Set up    Discuss Execute
- Goals        Tools     Strategy Actions
-```
+## Architecture
 
-The agent automatically adapts its behavior, available tools, and responses based on the current mode, ensuring users get the right capabilities at the right time.
+IdeaPotential is built as an **App Agent** - a React application with direct access to AI agent state, enabling rich, interactive user experiences beyond simple chat interfaces.
 
-### Getting Started with the Four-Mode Workflow
+### Technical Stack
 
-1. **Start with Onboarding**: Begin by switching to onboarding mode to define your agent's purpose and methodology
-2. **Configure Integrations**: Use integration mode to set up and test any external tools or services needed
-3. **Plan & Execute**: Use plan mode for strategy and act mode for execution in daily operations
+- **Frontend**: React Router v7 with server-side rendering
+- **Backend**: Cloudflare Workers + Durable Objects
+- **AI**: Cloudflare AI Gateway with multiple LLM providers
+- **Authentication**: AI@YourService OAuth integration
+- **Styling**: Tailwind CSS v4 with responsive design
+- **State Management**: Agent-integrated state with real-time updates
 
-**Quick Mode Switching**: You can switch modes anytime by typing just the mode name:
+### Agent Architecture
 
-- Type "onboarding" to switch to onboarding mode
-- Type "integration" to switch to integration mode
-- Type "plan" to switch to plan mode
-- Type "act" to switch to act mode
+- **Specialized Assessment Tools**: Custom tools for idea evaluation and scoring
+- **Multi-Idea State Management**: Handles multiple concurrent assessments
+- **Context-Aware Conversations**: Maintains assessment state across sessions
+- **Progressive Enhancement**: Builds comprehensive profiles over time
 
-## Stack
+## Getting Started
 
-- React Router v7 (SSR + hydration) with `@react-router/dev/vite`
-- Cloudflare Workers glue in `src/worker.ts` (agents routing + API endpoints)
-- Vite + `@cloudflare/vite-plugin` + `@tailwindcss/vite` + `vite-tsconfig-paths`
-- Tailwind CSS v4 (use `@import "tailwindcss";` in `src/styles.css`)
+### Prerequisites
 
-Key files:
+- Cloudflare account for deployment
+- AI@YourService account for authentication and LLM access
 
-- `app/entry.client.tsx`, `app/entry.server.tsx`, `app/root.tsx`, `app/routes.ts`
-- `app/routes/_index.tsx`, `app/routes/auth.callback.tsx`
-- `src/worker.ts` (handles `/api/oauth/config`, `/api/oauth/token`, `/api/user/info`, then falls through to React Router)
+### Local Development
 
-Hydration safety:
-
-- `<meta charSet="utf-8" />` + server `Content-Type: text/html; charset=utf-8`
-- Pre-hydration theme script in `app/root.tsx` sets `dark/light` to avoid mismatches
-- `suppressHydrationWarning` only on `<html>`
-
-## Prerequisites
-
-- **Cloudflare Account**
-- **OpenAI API key** (or access to [AI@YourService](https://atyourservice.ai) Gateway)
-
-### Authentication Options
-
-This template uses **AI@YourService** for user authentication by default, but you have flexibility in your authentication approach:
-
-#### Option 1: Full AI@YourService Integration (As implemented)
-
-- Use AI@YourService for both user authentication and LLM Gateway access
-- Users pay for their own AI usage through their AI@YourService account
-- Seamless integration with built-in billing and usage tracking
-
-#### Option 2: Custom Authentication + AI@YourService Gateway
-
-- Implement your own user authentication system
-- Still use AI@YourService OAuth flow for LLM Gateway authentication
-- Users connect their AI@YourService account for AI usage billing
-- You maintain control over user management while leveraging AI@YourService for AI costs
-
-#### Option 3: Fully Custom
-
-- Implement your own authentication and AI provider integration
-- You handle all billing and usage management
-
-> **💡 Recommended Approach**: Use AI@YourService OAuth for the LLM Gateway even with custom auth, so users pay for their own AI usage rather than you absorbing those costs.
-
-## Quick Start (dev)
-
-1. Install dependencies:
+1. **Clone and install**:
 
 ```bash
+git clone <repository>
+cd ideapotential
 pnpm install
 ```
 
-2. Set up your environment:
+2. **Configure environment**:
+   Create `.dev.vars` based on `.dev.vars.example`
 
-Create a `.dev.vars` file based on `.dev.vars.example`
-
-3. Run locally (ports: 5273 for this demo):
+3. **Run locally**:
 
 ```bash
 pnpm run dev
 ```
 
-## Deployment
+Runs on `localhost:5773`
 
-The project supports three deployment environments, each with its own configuration as defined in `wrangler.jsonc`:
-
-### Development (dev)
-
-- **Purpose**: Local development and automated testing deployments
-- **Configuration**: Uses the default configuration in `wrangler.jsonc`
-- **Environment Variables**:
-  - `SETTINGS_ENVIRONMENT`: "dev"
-- **Usage**:
-  - For local development: `pnpm run dev`
-- **Deployment**:
-  - Automatically deployed on Git push to branch `dev` to enable CI/CD testing
-  - Optional manual deployment:
-  ```bash
-  pnpm run deploy
-  ```
-
-### Staging/Preview
-
-- **Purpose**: Testing changes before production deployment
-- **Configuration**: Uses the `staging` environment in `wrangler.jsonc`
-- **Environment Variables**:
-  - `SETTINGS_ENVIRONMENT`: "staging"
-- **Domain**: `staging.appagent.dev`
-- **Deployment**:
-  - Automatically deployed on Git push to branch `dev` to enable CI/CD testing
-  - Optional manual deployment:
-  ```bash
-  pnpm run deploy:staging
-  ```
-
-### Production
-
-- **Purpose**: Live production environment
-- **Configuration**: Uses the `production` environment in `wrangler.jsonc`
-- **Environment Variables**:
-  - `SETTINGS_ENVIRONMENT`: "production"
-- **Domain**: `appagent.dev`
-- **Deployment**:
-  - Automatically deployed on Git push to branch `main` to enable CI/CD testing
-  - Optional manual deployment:
-  ```bash
-  pnpm run deploy:production
-  ```
-
-### OAuth notes
-
-- Client fetches config from `/api/oauth/config` which returns `token_url: /api/oauth/token`
-- The Worker exchanges the code server-side at `/api/oauth/token` (avoids browser CORS and keeps secrets server-side)
-
-## Project Structure
-
-```
-├── src/
-│   ├── app.tsx        # Chat UI implementation
-│   ├── server.ts      # Chat agent logic
-│   ├── styles.css     # UI styling
-│   └── agent/         # Agent implementation
-│       ├── AppAgent.ts          # Main agent class
-│       ├── tools/                # Tool definitions
-│       ├── prompts/              # System prompts
-│       ├── utils/
-│       │   ├── export-import-utils.ts  # Export/import functionality
-│       │   └── tool-utils.ts      # Tool utility functions
-│       ├── types/                # Type definitions
-│       │   └── generic.ts        # Generic type definitions
-│       └── storage/              # Data persistence layer
-│           ├── entities.ts       # Generic entity storage
-│           └── history.ts        # Interaction history
-├── docs/
-│   └── agent-export-import.md  # Documentation for export/import functionality
-```
-
-## Customization Guide
-
-### Adding New Tools
-
-Add new tools in `tools.ts` using the tool builder:
-
-```typescript
-// Example of a tool that requires confirmation
-const searchDatabase = tool({
-  description: "Search the database for user records",
-  parameters: z.object({
-    query: z.string(),
-    limit: z.number().optional(),
-  }),
-  // No execute function = requires confirmation
-});
-
-// Example of an auto-executing tool
-const getCurrentTime = tool({
-  description: "Get current server time",
-  parameters: z.object({}),
-  execute: async () => new Date().toISOString(),
-});
-
-// Scheduling tool implementation
-const scheduleTask = tool({
-  description:
-    "schedule a task to be executed at a later time. 'when' can be a date, a delay in seconds, or a cron pattern.",
-  parameters: z.object({
-    type: z.enum(["scheduled", "delayed", "cron"]),
-    when: z.union([z.number(), z.string()]),
-    payload: z.string(),
-  }),
-  execute: async ({ type, when, payload }) => {
-    // ... see the implementation in tools.ts
-  },
-});
-```
-
-To handle tool confirmations, add execution functions to the `executions` object:
-
-```typescript
-export const executions = {
-  searchDatabase: async ({
-    query,
-    limit,
-  }: {
-    query: string;
-    limit?: number;
-  }) => {
-    // Implementation for when the tool is confirmed
-    const results = await db.search(query, limit);
-    return results;
-  },
-  // Add more execution handlers for other tools that require confirmation
-};
-```
-
-Tools can be configured in two ways:
-
-1. With an `execute` function for automatic execution
-2. Without an `execute` function, requiring confirmation and using the `executions` object to handle the confirmed action
-
-### Modifying the UI
-
-The chat interface is built with React and can be customized in `app.tsx`:
-
-- Modify the theme colors in `styles.css`
-- Add new UI components in the chat container
-- Customize message rendering and tool confirmation dialogs
-- Add new controls to the header
-
-## Data Export and Import
-
-The agent includes built-in functionality for data export and import, allowing you to back up and restore the agent's state, messages, and database tables.
-
-### Exporting Agent Data
-
-You can create a complete backup of an agent by accessing the export endpoint:
+4. **Deploy**:
 
 ```bash
-# Export agent data to a JSON file
-curl -X GET "http://localhost:5173/agents/foo-agent/my-agent/export" \
-  -H "Content-Type: application/json" \
-  --output agent-backup.json
+pnpm run deploy
 ```
 
-The exported data includes:
+## User Guide
 
-- Current agent state (metadata.state)
-- Database schema and data in a structured format (tables)
-- Message history (stored in the cf_ai_chat_agent_messages table)
-- Scheduled tasks (stored in the cf_agents_schedules table)
-- Custom database tables (companies, leads, interaction history, etc.)
+### Starting Your First Assessment
 
-#### Export File Structure
+1. **Sign in** via AI@YourService OAuth
+2. **Describe your idea** in the chat interface
+3. **Follow the guided assessment** - the agent will ask targeted questions
+4. **Review your progress** in the always-visible idea switcher
+5. **Switch between ideas** as needed using the dropdown
 
-The export file is structured as a JSON object with the following top-level keys:
+### Managing Multiple Ideas
 
-- `metadata`: Contains export timestamp, agent ID, and current state
-- `tables`: Contains all database tables with their schema and data
+- Use the **idea switcher** at the top to see all your ideas
+- **Progress indicators** show completion percentage for each
+- **Click any idea** to switch context immediately
+- **"+ New Idea"** to start fresh assessments
 
-Messages are stored within the database tables section rather than as a separate array. If examining an export file, you'll find messages in the `cf_ai_chat_agent_messages` table.
+### Understanding Your Assessment
 
-#### Getting Just Messages
+- **Completion percentage** shows how much of the assessment is done
+- **Stage indicators** track progression from concept to detailed analysis
+- **Individual factor scores** with explanations and improvement suggestions
+- **Overall viability assessment** with strategic recommendations
 
-If you only need the message history, you can use the `get-messages` endpoint:
+### Export and Sharing (Planned)
 
-```bash
-# Get only message history
-curl -X GET "http://localhost:5173/agents/foo-agent/my-agent/get-messages" \
-  -H "Content-Type: application/json" \
-  --output agent-messages.json
-```
+Future versions will include:
 
-### Importing Agent Data
+- Detailed assessment reports
+- Sharing capabilities for team collaboration
+- Integration with business planning tools
+- Historical tracking and comparison
 
-To restore an agent from a previously exported backup:
+## Recent Improvements
 
-```bash
-# Import a backup file
-curl -X POST "http://localhost:5173/agents/foo-agent/new-agent/import" \
-  -F "file=@agent-backup.json" \
-  -F "includeMessages=true" \
-  -F "includeScheduledTasks=true"
-```
+### Enhanced User Experience (Latest)
 
-Import options:
+- **Multi-Idea Management System**: Switch between multiple startup ideas seamlessly
+- **Smart Balance Widget**: Visual credit tracking with usage indicators
+- **Mobile Optimization**: Improved responsive design and z-index fixes
+- **Cleaner Interface**: Reduced redundancy, better visual hierarchy
 
-- `includeMessages` (default: true) - Whether to import message history
-- `includeScheduledTasks` (default: true) - Whether to import scheduled tasks
-- `preserveAgentId` (default: false) - Whether to preserve the original agent ID
+### Agent Enhancements
 
-This functionality is useful for:
+- **Specialized Assessment Tools**: Custom tools for startup evaluation
+- **Context-Aware State Management**: Maintains assessment progress across sessions
+- **Progressive Scoring System**: Builds comprehensive evaluation over time
+- **Idea Selection Tool**: Intelligent switching between different assessments
 
-- Creating a new agent instance with existing data
-- Migrating data between agents
-- Creating backups before major changes
-- Recovering from data loss
+### Technical Improvements
 
-## Four-Mode Workflow Example
+- **Responsive Z-Index Management**: Proper layering on mobile vs desktop
+- **Enhanced Type Safety**: Comprehensive TypeScript coverage
+- **Improved Error Handling**: Better user feedback and recovery
+- **Performance Optimization**: Faster loading and smoother interactions
 
-Here's how to use the four-mode architecture to build a customer support agent:
+## Roadmap
 
-### 1. Onboarding Mode - Define Purpose & Methodology
+### Phase 1: Core Assessment (Complete)
 
-```
-User: "onboarding"
-Agent: Switches to onboarding mode
+- ✅ Basic startup idea evaluation framework
+- ✅ Multi-factor scoring system
+- ✅ Conversational assessment interface
+- ✅ Multi-idea management
 
-User: "I want to create a customer support agent"
-Agent: Interviews you about:
-- What types of customer issues you handle
-- Your support process and escalation procedures
-- Response time goals and quality standards
-- Knowledge base and FAQ structure
-- Communication preferences (email, chat, etc.)
+### Phase 2: Enhanced Analytics (In Progress)
 
-Output: Saved configuration stored for future operation
-```
+- 🔄 Detailed progress visualization
+- 🔄 Historical tracking and trends
+- 🔄 Comparative analysis between ideas
+- 🔄 Export and reporting capabilities
 
-### 2. Integration Mode - Set Up & Test Tools
+### Phase 3: Collaboration & Integration (Planned)
 
-```
-User: "integration"
-Agent: Switches to integration mode
+- 📋 Team collaboration features
+- 📋 Integration with business planning tools
+- 📋 Market data enrichment via Composio
+- 📋 Investor presentation generation
 
-Agent: Analyzes your configuration and identifies needed tools:
-- Ticket system integration (Zendesk, Freshdesk, etc.)
-- Knowledge base search
-- Customer database lookup
-- Email template system
-- Escalation notification system
+### Phase 4: Advanced Features (Future)
 
-Agent: Guides you through testing each integration and documents working tools
-Output: Validated, documented tool ecosystem
-```
+- 📋 AI-powered market research
+- 📋 Competitive intelligence gathering
+- 📋 Financial modeling and projections
+- 📋 Validation experiment suggestions
 
-### 3. Plan Mode - Strategic Support Planning
+## Architecture Notes
 
-```
-User: "plan"
-Agent: Switches to plan mode (no execution tools)
+IdeaPotential demonstrates the power of **App Agent architecture** where the React application has direct access to agent state, enabling:
 
-User: "Help me plan a strategy for reducing response times"
-Agent: Analyzes your support data and suggests:
-- Automation opportunities based on common issues
-- Knowledge base improvements
-- Process optimizations
-- Performance metrics to track
+- **Rich UX**: Beyond simple chat - visual progress, idea management, status tracking
+- **State Persistence**: Assessment progress maintained across sessions
+- **Context Switching**: Seamless movement between different startup ideas
+- **Real-time Updates**: UI automatically reflects agent state changes
 
-Output: Strategic plan for implementation
-```
+This approach enables sophisticated applications that feel more like traditional web apps while maintaining the power and flexibility of AI agent interactions.
 
-### 4. Act Mode - Execute Support Operations
+## Contributing
 
-```
-User: "act"
-Agent: Switches to act mode (full tool access)
+IdeaPotential is part of the AI@YourService ecosystem. For contributions or questions:
 
-Agent: Actively handles support operations:
-- Processes incoming tickets using your documented methodology
-- Searches knowledge base for solutions
-- Drafts responses using your templates
-- Escalates complex issues per your procedures
-- Tracks metrics and suggests improvements
-
-Output: Executed support actions using your configured settings
-```
-
-## Example Use Cases
-
-This four-mode architecture works for any domain:
-
-1. **Customer Support Agent** (as shown above)
-2. **Sales CRM Agent** (see superfans demo)
-3. **Development Assistant**
-4. **Data Analysis Assistant**
-5. **Personal Productivity Assistant**
-6. **Project Management Agent**
-
-Each use case follows the same pattern:
-
-1. **Onboarding**: Define goals, methodology, and success criteria
-2. **Integration**: Set up and test required tools and services
-3. **Plan**: Strategic thinking and analysis without execution
-4. **Act**: Execute tasks using the established playbook and tools
-
-## Composio Integration
-
-This agent includes integration with [Composio](https://composio.dev), which provides a way to connect the agent with various external services including Google, GitHub, Notion, and more.
-
-### Setting Up Composio
-
-1. Create a Composio account at [composio.dev](https://composio.dev)
-2. Get your API key from the Composio dashboard
-3. Add it to your `.dev.vars` file:
-
-```
-COMPOSIO_API_KEY=your-api-key-here
-```
-
-### How Composio Works
-
-Composio provides a simple way to add third-party integrations to your agent:
-
-- The agent's tool processor automatically detects and handles Composio tool calls
-- Composio tools are processed using the `handleToolCall` function from the Composio SDK
-- All results are automatically integrated back into the agent's conversation flow
-
-### Available Services
-
-By default, the integration includes the "googlesuper" app, which provides access to Gmail, Google Calendar, and other Google services. To add support for other apps, modify the `composioTools` export in `src/agent/tools/composio.ts`:
-
-```typescript
-// To support multiple apps:
-export const composioTools = await toolset.getTools({
-  apps: ["googlesuper", "github", "notion"],
-});
-```
-
-### Usage Examples
-
-Users can interact with Composio tools through natural language:
-
-```
-Send an email to john@example.com with the subject "Meeting" and body "Can we meet tomorrow at 2pm?"
-
-Star the GitHub repository "composiohq/composio"
-
-Create a new page in Notion titled "Project Plan"
-```
-
-See the [Composio documentation](https://docs.composio.dev) for a complete list of supported apps and capabilities.
-
-## Learn More
-
-- [`agents`](https://github.com/cloudflare/agents/blob/main/packages/agents/README.md)
-- [Cloudflare Agents Documentation](https://developers.cloudflare.com/agents/)
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
+- Visit [AI@YourService](https://atyourservice.ai)
+- Check the GitHub repository for issues and feature requests
+- Follow the standard contribution guidelines
 
 ## License
 
 MIT
 
-## Secret word for agents
+---
 
-AppAgent
+**Ready to validate your startup idea?** Visit [ideapotential.com](https://ideapotential.com) to get started with AI-powered startup assessment.

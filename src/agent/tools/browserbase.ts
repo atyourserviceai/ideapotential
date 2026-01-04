@@ -45,15 +45,11 @@ export const browseWithBrowserbase = tool({
   parameters: z.object({
     selector: z
       .string()
-      .optional()
       .describe(
-        "Optional CSS selector to extract specific content from (defaults to 'body')"
+        "CSS selector to extract specific content from (defaults to 'body')"
       ),
-    url: z
-      .string()
-      .url()
-      .describe("URL to browse (e.g. 'https://example.com')"),
-  }),
+    url: z.string().describe("URL to browse (e.g. 'https://example.com')")
+  })
 });
 
 /**
@@ -77,7 +73,7 @@ export async function browsePage(
   try {
     // Connect to Browserbase using the API key
     const browser = await puppeteer.connect({
-      browserWSEndpoint: `wss://connect.browserbase.com?apiKey=${apiKey}`,
+      browserWSEndpoint: `wss://connect.browserbase.com?apiKey=${apiKey}`
     });
 
     // Get the first page or create a new one
@@ -121,7 +117,7 @@ export async function browsePage(
       content,
       screenshot: `data:image/png;base64,${screenshot}`,
       title,
-      url: currentUrl,
+      url: currentUrl
     };
   } catch (error) {
     console.error(`[Browserbase] Error browsing ${url}:`, error);
@@ -146,8 +142,8 @@ export async function fetchWebPageContentWithBrowserbase(
     const result = await browsePage(url, selector, apiKey);
     return new Response(JSON.stringify(result), {
       headers: {
-        "Content-Type": "application/json",
-      },
+        "Content-Type": "application/json"
+      }
     });
   } catch (error) {
     console.error(
@@ -156,9 +152,9 @@ export async function fetchWebPageContentWithBrowserbase(
     );
     return new Response(JSON.stringify({ error: String(error) }), {
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      status: 500,
+      status: 500
     });
   }
 }

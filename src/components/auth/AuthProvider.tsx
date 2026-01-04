@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useState,
+  useState
 } from "react";
 import { getOAuthConfig, type OAuthConfig } from "../../config/oauth";
 
@@ -40,6 +39,8 @@ export interface UserInfo {
   id: string;
   email: string;
   credits: number;
+  starting_balance?: number;
+  used_credits?: number;
 }
 
 export interface AuthMethod {
@@ -81,55 +82,26 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  // To avoid hydration mismatches, start with isLoading = true on both server and client
-  // and render a consistent loading shell until client effects run
-  // Start false so SSR shows LandingPage; client effect will validate and update
+  // Start with loading false for SSR/bots, will be set to true on client mount
+  // This prevents bots from seeing loading spinners while still preventing auth flash on client
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasHydrated, setHasHydrated] = useState<boolean>(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
-  // Function to sync token with agent database
-  const syncTokenWithAgent = useCallback(async (authData: AuthMethod) => {
-    if (!authData.userInfo?.id || !authData.apiKey) return;
+  // Note: Agent sync moved to project-specific components to avoid
+  // auth components needing to know about project structure
 
-    try {
-      console.log(
-        `[Auth] Syncing token with agent for user: ${authData.userInfo.id}`
-      );
-
-      const response = await fetch(
-        `/agents/app-agent/${authData.userInfo.id}/store-user-info`,
-        {
-          body: JSON.stringify({
-            api_key: authData.apiKey,
-            credits: authData.userInfo.credits,
-            email: authData.userInfo.email,
-            payment_method: "credits", // Default value
-            user_id: authData.userInfo.id,
-          }),
-          headers: {
-            Authorization: `Bearer ${authData.apiKey}`,
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-        }
-      );
-
-      if (response.ok) {
-        console.log(
-          `[Auth] ✅ Token synced with agent for user: ${authData.userInfo.id}`
-        );
-      } else {
-        console.warn(
-          "[Auth] Failed to sync token with agent:",
-          response.status
-        );
-      }
-    } catch (error) {
-      console.warn("[Auth] Error syncing token with agent:", error);
-    }
+  // Client-side hydration effect - prevents auth flash only on client
+  useEffect(() => {
+    // This only runs on the client after hydration
+    setHasHydrated(true);
+    setIsLoading(true);
   }, []);
 
   useEffect(() => {
+    // Don't run auth check until after hydration
+    if (!hasHydrated) return;
+
     // Load OAuth config and check for stored auth on component mount
     const init = async () => {
       try {
@@ -175,16 +147,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
             try {
               const response = await fetch("/api/user/info", {
                 headers: {
-                  Authorization: `Bearer ${parsedAuth.apiKey}`,
+                  Authorization: `Bearer ${parsedAuth.apiKey}`
                 },
-                method: "GET",
+                method: "GET"
               });
 
               if (response.ok) {
-                // Token is valid, use the stored auth and sync with agent
+                // Token is valid, use the stored auth
                 setAuthMethod(parsedAuth);
-                // Defer syncing with agent until after hydration to avoid SSR/client divergence
-                queueMicrotask(() => void syncTokenWithAgent(parsedAuth));
               } else {
                 // Token is invalid, clear it and show sign-in with message
                 console.log("Stored token is invalid, clearing auth");
@@ -211,7 +181,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     init();
-  }, [syncTokenWithAgent]);
+  }, [hasHydrated]);
 
   const login = async () => {
     try {
@@ -244,31 +214,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem("auth_method");
     localStorage.removeItem("oauth_state");
 
-    // Also clear the agent's cached user data if we have valid auth info
-    if (currentAuth?.userInfo?.id && currentAuth?.apiKey) {
+    // Clear JWT token from UserDO for security
+    if (currentAuth?.userInfo?.id) {
       try {
-        console.log("[Auth] Clearing agent cached data on logout...");
-        const clearResponse = await fetch(
-          `/agents/app-agent/${currentAuth.userInfo.id}/clear-user-info`,
-          {
-            headers: {
-              Authorization: `Bearer ${currentAuth.apiKey}`,
-              "Content-Type": "application/json",
-            },
-            method: "POST",
-          }
-        );
+        console.log("[Auth] Clearing JWT token from UserDO on logout...");
+        const clearResponse = await fetch("/api/clear-jwt", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentAuth.apiKey}`
+          },
+          body: JSON.stringify({
+            user_id: currentAuth.userInfo.id
+          })
+        });
 
         if (clearResponse.ok) {
-          console.log("[Auth] Successfully cleared agent cached data");
+          console.log("[Auth] ✅ JWT token cleared from UserDO successfully");
         } else {
           console.warn(
-            "[Auth] Failed to clear agent cached data:",
+            "[Auth] Failed to clear JWT from UserDO:",
             clearResponse.status
           );
         }
       } catch (error) {
-        console.warn("[Auth] Error clearing agent cached data:", error);
+        console.warn("[Auth] Error clearing JWT from UserDO:", error);
       }
     }
   };
@@ -280,7 +250,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       apiKey: authMethod.apiKey,
       byokKeys: keys, // Keep AtYourService.ai API key for verification
       type: "byok",
-      userInfo: authMethod.userInfo,
+      userInfo: authMethod.userInfo
     };
 
     setAuthMethod(newAuth);
@@ -293,7 +263,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const newAuth: AuthMethod = {
       apiKey: authMethod.apiKey,
       type: "atyourservice",
-      userInfo: authMethod.userInfo,
+      userInfo: authMethod.userInfo
     };
 
     setAuthMethod(newAuth);
@@ -307,9 +277,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call the local server endpoint that proxies to the gateway
       const response = await fetch("/api/user/info", {
         headers: {
-          Authorization: `Bearer ${authMethod.apiKey}`,
+          Authorization: `Bearer ${authMethod.apiKey}`
         },
-        method: "GET",
+        method: "GET"
       });
 
       if (response.ok) {
@@ -317,6 +287,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           id: string;
           email: string;
           credits: number;
+          starting_balance?: number;
+          used_credits?: number;
         };
 
         // Update the stored auth method with fresh user info
@@ -326,7 +298,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.id,
-          },
+            starting_balance: userInfo.starting_balance,
+            used_credits: userInfo.used_credits
+          }
         };
 
         setAuthMethod(updatedAuth);
@@ -367,7 +341,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     oauthConfig,
     refreshUserInfo,
     switchToBYOK,
-    switchToCredits,
+    switchToCredits
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

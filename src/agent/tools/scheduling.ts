@@ -12,14 +12,15 @@ export type ScheduleInput = {
 };
 
 // Define our own schedule schema based on what we need
+// Note: All fields must be required for OpenAI function calling compatibility
 const scheduleSchema = z.object({
-  description: z.string(),
+  description: z.string().describe("Description of the task to schedule"),
   when: z.object({
-    cron: z.string().optional(),
-    date: z.date().optional(),
-    delayInSeconds: z.number().optional(),
-    type: z.enum(["scheduled", "delayed", "cron", "no-schedule"]),
-  }),
+    cron: z.string().describe("Cron expression (required when type is 'cron')"),
+    date: z.string().describe("ISO date string (required when type is 'scheduled')"),
+    delayInSeconds: z.number().describe("Delay in seconds (required when type is 'delayed')"),
+    type: z.enum(["scheduled", "delayed", "cron", "no-schedule"]).describe("Type of schedule")
+  }).describe("Schedule timing configuration")
 });
 
 /**
@@ -29,7 +30,7 @@ export const scheduleTask = tool({
   description: "Schedule a task to be executed at a later time",
   execute: async ({
     when,
-    description,
+    description
   }: {
     when: ScheduleInput;
     description: string;
@@ -68,7 +69,7 @@ export const scheduleTask = tool({
       return `Error scheduling task: ${error}`;
     }
   },
-  parameters: scheduleSchema,
+  parameters: scheduleSchema
 });
 
 /**
@@ -93,7 +94,7 @@ export const getScheduledTasks = tool({
       return `Error retrieving tasks: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -117,6 +118,6 @@ export const cancelScheduledTask = tool({
     }
   },
   parameters: z.object({
-    taskId: z.string(),
-  }),
+    taskId: z.string()
+  })
 });
