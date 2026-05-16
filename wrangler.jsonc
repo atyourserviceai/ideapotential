@@ -4,6 +4,9 @@
   "main": "src/worker.ts",
   "compatibility_date": "2025-08-03",
   "compatibility_flags": ["nodejs_compat"],
+  "alias": {
+    "virtual:react-router/server-build": "./build/server/index.js"
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
@@ -12,7 +15,7 @@
     "binding": "AI"
   },
   "assets": {
-    "directory": "public",
+    "directory": "build/client",
     "binding": "ASSETS",
     "not_found_handling": "none"
   },
