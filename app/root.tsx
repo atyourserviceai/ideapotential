@@ -48,6 +48,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});gtag('js',new Date());gtag('config','G-PHF5DLX5KL',{client_storage:'none',anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});"
           }}
         />
+        {/* Cloudflare Web Analytics — explicit injection; CF auto-inject is unreliable on Worker responses */}
+        <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "7026f93f40e24d69976aebc377768128"}' />
         {/* Set theme class before hydration to avoid FOUC/mismatch */}
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme setup script
