@@ -1,34 +1,35 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import "../src/styles.css";
+import stylesUrl from "../src/styles.css?url";
 
 export const meta = () => [
-  { title: "App Agent Template" },
+  { title: "Ideapotential" },
   {
     name: "viewport",
-    content: "width=device-width, initial-scale=1.0",
+    content: "width=device-width, initial-scale=1.0"
   },
   {
     name: "description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "Validate startup ideas with a 10-factor assessment"
   },
-  { property: "og:title", content: "App Agent Template" },
+  { property: "og:title", content: "Ideapotential" },
   {
     property: "og:description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "Validate startup ideas with a 10-factor assessment"
   },
   { property: "og:type", content: "website" },
-  { property: "og:site_name", content: "App Agent Template" },
+  { property: "og:site_name", content: "Ideapotential" },
   { property: "og:image", content: "/api/og-image" },
   { name: "twitter:card", content: "summary_large_image" },
-  { name: "twitter:title", content: "App Agent Template" },
+  { name: "twitter:title", content: "Ideapotential" },
   {
     name: "twitter:description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "Validate startup ideas with a 10-factor assessment"
   },
-  { name: "twitter:image", content: "/api/og-image" },
+  { name: "twitter:image", content: "/api/og-image" }
 ];
 export const links = () => [
   { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "stylesheet", href: stylesUrl }
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -44,15 +45,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Analytics
           dangerouslySetInnerHTML={{
             __html:
-              "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});gtag('js',new Date());gtag('config','G-PHF5DLX5KL',{client_storage:'none',anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});",
+              "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});gtag('js',new Date());gtag('config','G-PHF5DLX5KL',{client_storage:'none',anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});"
           }}
         />
+        {/* Cloudflare Web Analytics — explicit injection; CF auto-inject is unreliable on Worker responses */}
+        <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "7026f93f40e24d69976aebc377768128"}' />
         {/* Set theme class before hydration to avoid FOUC/mismatch */}
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme setup script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var t=localStorage.getItem('theme');var d=t? t==='dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);var de=document.documentElement;de.classList.toggle('dark',d);de.classList.toggle('light',!d);}catch(e){}})();",
+              "(function(){try{var t=localStorage.getItem('theme');var d=t? t==='dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);var de=document.documentElement;de.classList.toggle('dark',d);de.classList.toggle('light',!d);}catch(e){}})();"
           }}
         />
       </head>

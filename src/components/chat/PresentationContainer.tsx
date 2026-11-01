@@ -9,6 +9,8 @@ type PresentationContainerProps = {
   agentState: AppAgentState | null;
   showDebug: boolean;
   variant?: "panel" | "full"; // full = full-screen background variant
+  chatIsOpen?: boolean;
+  messageCount?: number;
 };
 
 export function PresentationContainer({
@@ -17,12 +19,14 @@ export function PresentationContainer({
   agentState,
   showDebug,
   variant = "panel",
+  chatIsOpen = false,
+  messageCount: _messageCount = 0
 }: PresentationContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
     isOnboardingComplete: false,
     mode: agentMode,
-    onboardingStep: "start",
+    onboardingStep: "start"
   };
 
   // Use the provided state or the default state
@@ -37,6 +41,7 @@ export function PresentationContainer({
               agentState={safeAgentState}
               agentMode={agentMode}
               showDebug={showDebug}
+              chatIsOpen={chatIsOpen}
             />
           </div>
         </div>
@@ -64,6 +69,7 @@ export function PresentationContainer({
             agentState={safeAgentState}
             agentMode={agentMode}
             showDebug={showDebug}
+            chatIsOpen={chatIsOpen}
           />
         </div>
       </div>
