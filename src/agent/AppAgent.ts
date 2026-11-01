@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { Message } from "@ai-sdk/ui-utils";
-// import { createAnthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AgentContext, Connection, Schedule } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
@@ -33,7 +33,9 @@ import { processToolCalls } from "./utils/tool-utils";
 import { ShareAssetGenerator } from "../services/share-asset-generator";
 
 // AI @ Your Service Gateway configuration
-const getOpenAI = (env: Env, apiKey?: string) => {
+// OpenAI route kept for reference; the default model is Claude (see getAIProvider)
+// @ts-expect-error Kept for reference - may be used in future
+const _getOpenAI = (env: Env, apiKey?: string) => {
   if (!apiKey) {
     throw new Error("API key is required for AI requests");
   }
@@ -43,7 +45,6 @@ const getOpenAI = (env: Env, apiKey?: string) => {
   });
 };
 
-/*
 // AI @ Your Service Gateway configuration for Anthropic
 const getAnthropic = (env: Env, apiKey?: string) => {
   if (!apiKey) {
@@ -54,7 +55,6 @@ const getAnthropic = (env: Env, apiKey?: string) => {
     baseURL: `${env.GATEWAY_BASE_URL}/v1/anthropic`,
   });
 };
-*/
 
 /*
 // AI @ Your Service Gateway configuration for Gemini
@@ -431,7 +431,7 @@ export class AppAgent extends AIChatAgent<Env> {
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
       );
-      return getOpenAI(this.env, userApiKey);
+      return getAnthropic(this.env, userApiKey);
     }
     const errorMsg =
       "No user API key available. User must be authenticated to use AI features.";
@@ -622,8 +622,8 @@ export class AppAgent extends AIChatAgent<Env> {
 
         while (retryCount <= maxRetries) {
           try {
-            const openai = await this.getAIProvider();
-            let model = openai("gpt-5-mini-2025-08-07");
+            const anthropic = await this.getAIProvider();
+            let model = anthropic("claude-haiku-5-5");
 
             // Enable simulation for testing if environment variable is set
             if (this.env.SIMULATE_THINKING_TOKENS === "true") {
@@ -638,7 +638,6 @@ export class AppAgent extends AIChatAgent<Env> {
               maxSteps: 10,
               messages: filteredMessages,
               model,
-              temperature: 1,
               onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
 
